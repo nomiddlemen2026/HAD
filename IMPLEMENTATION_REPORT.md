@@ -116,7 +116,14 @@ Nothing else needs a key. Future items that may: map tiles (OpenStreetMap is fre
 - **Location verification queue** for moderators, with a separate approval step for the community map. Setting a location back to unverified removes it from the map.
 - **Tile server** is configurable with `HAD_TILE_URL`. The CSP allows only that host.
 - **Tests:** 4 new map tests. **35 tests in total, all passing.**
-- **Still to do in Priority 2:** number relationship graph, Supabase port, map screenshots in the PDF.
+- **Network relationship graph** (`/graph.html`, built with Cytoscape.js). It derives three kinds of link from reports:
+  - the same reported number;
+  - the same payment account;
+  - numbers named in the same report, labelled as a possible association only.
+
+  Each link and finding lists the reports behind it. Victims see only their own cases, plus a count of how many reviewed reports by other people mention their numbers. No details of other victims' cases are shown. Staff see the full network, with a log entry for each view, and can mark any link as wrong or confirmed. A link marked wrong disappears for everyone.
+- **Tests:** 4 new graph tests. **39 tests in total, all passing.**
+- **Still to do in Priority 2:** Supabase port, map screenshots in the PDF.
 
 ## 5. Outstanding bugs
 

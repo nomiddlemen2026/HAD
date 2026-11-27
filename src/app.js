@@ -15,6 +15,7 @@ const { logEvidenceEvent, verifyChain, audit } = require('./custody');
 const { parseWhatsAppExport, PARSER_VERSION } = require('./whatsapp');
 const { buildCasePdf } = require('./pdf');
 const { createMailer } = require('./mailer');
+const { buildGraph } = require('./graph');
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 11);
 
 const SESSION_COOKIE = 'had_session';
@@ -369,6 +370,51 @@ function createApp(opts = {}) {
     if (l.lat === null || l.lat === undefined) return 'A location needs coordinates to appear on the map.';
     return null;
   }
+
+  // ---------- relationship graph ----------
+  function loadOverrides() {
+    return new Map(db.prepare('SELECT * FROM relationship_overrides').all().map(o => [o.edge_key, o]));
+  }
+
+  app.get('/api/graph', requireAuth, wrap((req, res) => {
+    const scope = oneOf(req.query.scope || 'mine', ['mine', 'all'], 'scope');
+    if (scope === 'all' && !isStaff(req.user)) throw new HttpError(403, 'FORBIDDEN', 'Only moderators can view the full network.');
+    const overrides = loadOverrides();
+    if (scope === 'all') {
+      audit(db, req.user.id, 'staff_graph_all', null, null, ip(req));
+      const reports = db.prepare(`SELECT r.*, c.title AS case_title FROM reports r JOIN cases c ON c.id = r.case_id
+        WHERE r.status NOT IN ('withdrawn') ORDER BY r.created_at`).all();
+      const g = buildGraph(reports, { caseLabel: r => `Case ${r.case_id.slice(0, 8)}: ${r.case_title}`, overrides, includeRemoved: true });
+      return res.json({ scope, ...g });
+    }
+    const reports = db.prepare(`SELECT r.*, c.title AS case_title FROM reports r JOIN cases c ON c.id = r.case_id
+      WHERE c.owner_id = ? AND r.status NOT IN ('withdrawn') ORDER BY r.created_at`).all(req.user.id);
+    const g = buildGraph(reports, { caseLabel: r => r.case_title, overrides });
+    // For the owner's own identifiers, say how many REVIEWED reports by OTHER people mention them,
+    // without revealing anything about those reports.
+    const countPhone = db.prepare("SELECT COUNT(*) n FROM reports WHERE phone_e164 = ? AND status = 'published' AND reporter_id != ?");
+    const countAcct = db.prepare("SELECT COUNT(*) n FROM reports, json_each(reports.related_bank_accounts) j WHERE j.value = ? AND status = 'published' AND reporter_id != ?");
+    for (const n of g.nodes) {
+      if (n.type === 'phone') n.othersReviewed = countPhone.get(n.label, req.user.id).n;
+      if (n.type === 'account') n.othersReviewed = countAcct.get(n.label, req.user.id).n;
+    }
+    res.json({ scope, ...g });
+  }));
+
+  app.post('/api/mod/relationships', requireRole('moderator', 'admin'), wrap((req, res) => {
+    const edgeKey = str(req.body.key, { max: 300, min: 5, field: 'key' });
+    const status = oneOf(req.body.status, ['removed', 'confirmed', 'clear'], 'status');
+    if (status === 'clear') {
+      db.prepare('DELETE FROM relationship_overrides WHERE edge_key = ?').run(edgeKey);
+    } else {
+      const note = str(req.body.note, { max: 1000, min: 3, field: 'Note' });
+      db.prepare(`INSERT INTO relationship_overrides (edge_key, status, note, decided_by, decided_at) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(edge_key) DO UPDATE SET status = excluded.status, note = excluded.note, decided_by = excluded.decided_by, decided_at = excluded.decided_at`)
+        .run(edgeKey, status, note, req.user.id, now());
+    }
+    audit(db, req.user.id, 'relationship_' + status, edgeKey, { note: req.body.note || null }, ip(req));
+    res.json({ ok: true });
+  }));
 
   // ---------- cases ----------
   app.get('/api/cases', requireAuth, wrap((req, res) => {
@@ -760,6 +806,7 @@ function createApp(opts = {}) {
   }));
 
   // ---------- static + errors ----------
+  app.use('/vendor/cytoscape', express.static(path.dirname(require.resolve('cytoscape')), { maxAge: '7d' }));
   app.use('/vendor/leaflet', express.static(path.join(path.dirname(require.resolve('leaflet/package.json')), 'dist'), { maxAge: '7d' }));
   app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
   app.use('/api', (req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found.' } }));

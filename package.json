@@ -18,6 +18,7 @@
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.2.0",
     "cookie-parser": "^1.4.7",
+    "cytoscape": "^3.30.2",
     "express": "^5.3.0",
     "helmet": "^8.3.0",
     "leaflet": "^1.9.4",
