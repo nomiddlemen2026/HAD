@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Intelligence map · H.A.D</title>
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/vendor/leaflet/leaflet.js" defer></script><script src="/js/map.js" defer></script>
+</head>
+<body>
+<main>
+<div class="page-head"><div><h1>Intelligence map</h1><p>Every point is a stored location record with a source, date and confidence level. Nothing is inferred from phone numbers.</p></div></div>
+<div id="msg"></div>
+<div class="tabs" role="tablist" id="scopes">
+  <button role="tab" aria-selected="true" data-scope="mine">My locations</button>
+  <button role="tab" aria-selected="false" data-scope="community">Community (moderator-approved)</button>
+  <button role="tab" aria-selected="false" data-scope="all" class="hidden" data-staff>All locations (staff)</button>
+</div>
+<p class="small muted" id="scope-note"></p>
+<div class="map-layout">
+  <div class="card map-card"><div id="map" role="region" aria-label="Map of location records"></div><div id="map-fallback" class="hidden"></div></div>
+  <aside class="card map-side">
+    <h3>Show</h3>
+    <div id="filters"></div>
+    <h3 style="margin-top:16px">Legend</h3>
+    <div id="legend" class="small"></div>
+  </aside>
+</div>
+<section class="card"><h2>Location records <span class="small muted" id="count"></span></h2><ul class="list" id="loc-list"></ul></section>
+</main>
+</body>
+</html>

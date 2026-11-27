@@ -65,13 +65,13 @@ Automated: `npm test` runs **31 tests, 31 passing** (run 27 Nov 2026).
 | Database permissions tested | Yes, as API-level access control (there is no RLS on SQLite). Tested by RT3 and RT9. |
 | Search works with real stored data | Yes, tested |
 | Evidence uploads work | Yes, tested |
-| Map records load correctly | **Not met.** Location records with source, reliability, timestamp, verification and evidence links are stored and listed, but there is **no interactive map** yet (Priority 2). |
+| Map records load correctly | Yes, added in Priority 2 (Leaflet + OpenStreetMap). Every marker is a stored record. API rules are tested. The browser test used stand-in tiles because this sandbox blocks the OpenStreetMap tile server. The tile-failure fallback was also tested. |
 | PDF exports work | Yes, case summary PDF, tested. Map screenshots are not included. |
 | Mobile layout tested | Yes |
 | Security tests executed | Yes |
 | Known limitations documented | Yes, section 4 |
 
-Because the map item is not met, the full gate is **not** passed. Priority 1 is complete and tested.
+With the map added, every gate item has been executed. The one caveat is that real map tiles were not loaded in this sandbox.
 
 ## 3. Features requiring API credentials
 
@@ -84,7 +84,6 @@ Nothing else needs a key. Future items that may: map tiles (OpenStreetMap is fre
 ## 4. Known limitations
 
 **Not built yet** (Priority 2 and 3, and other parts of the master spec):
-- Interactive map (Leaflet)
 - Relationship graph
 - AI threat classification
 - Analytics charts
@@ -106,6 +105,18 @@ Nothing else needs a key. Future items that may: map tiles (OpenStreetMap is fre
 - If a report submission fails partway through saving locations, a retry may save one location twice. The report itself is never duplicated.
 - Privacy policy and terms are drafts and have no legal review. The app does not claim PDPA compliance.
 - Demo phone numbers are made up but could belong to real people. They exist only in the separate demo database, which shows a banner.
+
+## Priority 2 progress
+
+- **Intelligence map** (`/map.html`) has three views:
+  - My locations.
+  - Community: only locations a moderator has verified or corroborated and explicitly approved. Homes, victims' locations, places named in threats and IP estimates are refused by the server. Incidents are shown as a roughly 1 km area with no address.
+  - All locations: staff only, and audited.
+- **Map display:** marker shape shows the location category, and colour shows the verification level. Approximate locations get dashed precision circles. Clicking a marker shows its source, reliability, collection date, last verification date, case and supporting evidence link. Locations without coordinates appear in the list.
+- **Location verification queue** for moderators, with a separate approval step for the community map. Setting a location back to unverified removes it from the map.
+- **Tile server** is configurable with `HAD_TILE_URL`. The CSP allows only that host.
+- **Tests:** 4 new map tests. **35 tests in total, all passing.**
+- **Still to do in Priority 2:** number relationship graph, Supabase port, map screenshots in the PDF.
 
 ## 5. Outstanding bugs
 
