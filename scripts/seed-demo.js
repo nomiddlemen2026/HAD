@@ -66,7 +66,7 @@ const server = app.listen(0, async () => {
     fd = new FormData(); fd.append('file', new Blob(['[DEMO] call log placeholder']), 'DEMO call log.txt');
     await victim2('POST', `/api/cases/${c2.id}/evidence`, fd, true);
     await mod('POST', `/api/mod/reports/${r2.id}/decision`, { decision: 'publish', publicSummary: '[DEMO] Reported for phone calls threatening the victim\'s family over a loan.' });
-    await victim2('POST', `/api/cases/${c2.id}/reports`, { phone: '+60 11-1000 2003', channel: 'sms', category: 'payment_demand', description: '[DEMO] SMS demanding payment to an unknown account. Awaiting review. Synthetic.' });
+    await victim2('POST', `/api/cases/${c2.id}/reports`, { phone: '+60 11-1000 2003', channel: 'sms', category: 'payment_demand', description: '[DEMO] SMS demanding payment to an unknown account. Awaiting review. Synthetic.', relatedBankAccounts: '5000 1234 5678' });
 
     const anon = mk();
     await anon('POST', '/api/appeals', { type: 'appeal', phone: '+60 11-1000 2003', requesterName: '[DEMO] Number owner', requesterContact: 'owner@demo.had', reason: '[DEMO] I think this number was recycled. Synthetic appeal for demonstration.' });

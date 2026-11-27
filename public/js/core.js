@@ -41,6 +41,7 @@ const HAD = (() => {
     user: '<path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-9 2.5-9 5.5V22h18v-2.5C21 16.5 17 14 12 14z"/>',
     gavel: '<path d="M2 21h12v2H2zM5.2 8.2l2.8-2.8 11.3 11.3-2.8 2.8zM9.4 4l2.8-2.8 5.7 5.6-2.9 2.9zM3.8 9.6l2.8-2.8 5.7 5.6-2.9 2.9z"/>',
     phone: '<path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.6 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.6 3.6a1 1 0 01-.25 1z"/>',
+    graph: '<path d="M17 3a3 3 0 00-2.8 4.1L9.6 9.6a3 3 0 100 4.8l4.6 2.5A3 3 0 1015 15l-4.6-2.5a3 3 0 000-1l4.6-2.5A3 3 0 1017 3z"/>',
     map: '<path d="M15 4l-6-2-7 3v17l7-3 6 2 7-3V1zM9 4.4l6 2v13.2l-6-2z"/>',
     life: '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2zm0-4h-2V7h2z"/>',
   };
@@ -212,6 +213,7 @@ const HAD = (() => {
       ['/report.html', 'alert', 'Report a threat'],
       ['/cases.html', 'folder', 'My cases & evidence'],
       ['/map.html', 'map', 'Intelligence map'],
+      ['/graph.html', 'graph', 'Network graph'],
     ];
     const staffLinks = staff ? [['/mod.html', 'gavel', 'Moderation']] : [];
     const navHtml = l => `<a class="nav" href="${l[0]}"${l[0] === active ? ' aria-current="page"' : ''}>${icon(l[1])}<span>${l[2]}</span></a>`;

@@ -261,3 +261,7 @@ progress { width: 120px; accent-color: var(--purple); }
 .leaflet-bar a { background: var(--surface); color: var(--text); border-color: var(--border); }
 @media (max-width: 960px) { .map-layout { grid-template-columns: 1fr; } #map { height: 420px; } }
 @media (max-width: 520px) { #map { height: 360px; } }
+#graph { height: 560px; background: var(--bg-2); }
+@media (max-width: 960px) { #graph { height: 420px; } }
+.finding { padding: 12px 0; border-top: 1px solid var(--border); }
+.finding:first-child { border-top: 0; }

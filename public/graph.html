@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Network graph · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/vendor/cytoscape/cytoscape.min.js" defer></script><script src="/js/graph.js" defer></script>
+</head>
+<body>
+<main>
+<div class="page-head"><div><h1>Network graph</h1><p>How the numbers and bank accounts in reports connect. A shared number or account is a lead to investigate, not proof that the same person is behind it.</p></div></div>
+<div id="msg"></div>
+<div class="tabs" role="tablist" id="scopes">
+  <button role="tab" aria-selected="true" data-scope="mine">My cases</button>
+  <button role="tab" aria-selected="false" data-scope="all" class="hidden" data-staff>All reports (staff)</button>
+</div>
+<section class="card" id="findings-card"><h2>Findings</h2><div id="findings"></div></section>
+<div class="map-layout">
+  <div class="card map-card"><div id="graph" role="img" aria-label="Relationship graph. The same information is listed in Findings and in the details panel."></div></div>
+  <aside class="card map-side">
+    <h3>Legend</h3>
+    <div class="small">
+      <div class="legend-row"><span class="mk square" style="background:#8b6cff"></span><span>Case</span></div>
+      <div class="legend-row"><span class="mk circle" style="background:#2ea8ff"></span><span>Phone number</span></div>
+      <div class="legend-row"><span class="mk diamond" style="background:#ffb547"></span><span>Bank account</span></div>
+      <div class="legend-row"><span style="width:22px;border-top:2px solid #a3acd1"></span><span>Reported in a case</span></div>
+      <div class="legend-row"><span style="width:22px;border-top:2px dashed #ff9fb2"></span><span>Possible association only</span></div>
+    </div>
+    <h3 style="margin-top:16px">Details</h3>
+    <div id="detail" class="small muted">Tap a dot or a line to see the reports behind it.</div>
+  </aside>
+</div>
+</main>
+</body>
+</html>
