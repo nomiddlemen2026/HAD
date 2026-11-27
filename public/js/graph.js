@@ -103,15 +103,15 @@
       container: el, elements, maxZoom: 1.5, minZoom: 0.2,
       layout: { name: 'cose', animate: false, padding: 40, nodeDimensionsIncludeLabels: true, nodeRepulsion: 400000, idealEdgeLength: 120, componentSpacing: 100, randomize: false },
       style: [
-        { selector: 'node', style: { label: 'data(label)', color: '#eef1ff', 'font-size': 10, 'text-valign': 'bottom', 'text-margin-y': 4, 'text-outline-color': '#0e1530', 'text-outline-width': 2, width: 22, height: 22 } },
-        { selector: 'node[type="case"]', style: { shape: 'round-rectangle', 'background-color': '#8b6cff', width: 28, height: 20 } },
-        { selector: 'node[type="phone"]', style: { shape: 'ellipse', 'background-color': '#2ea8ff' } },
-        { selector: 'node[type="account"]', style: { shape: 'diamond', 'background-color': '#ffb547' } },
-        { selector: 'node[hit = 1]', style: { 'border-width': 3, 'border-color': '#ff5c7a' } },
-        { selector: 'edge', style: { width: 2, 'line-color': '#5b6796', 'curve-style': 'bezier' } },
-        { selector: 'edge[certainty="possible"]', style: { 'line-style': 'dashed', 'line-color': '#ff9fb2' } },
+        { selector: 'node', style: { label: 'data(label)', color: '#cfeeff', 'font-family': 'JetBrains Mono, monospace', 'font-size': 9, 'text-valign': 'bottom', 'text-margin-y': 4, 'text-outline-color': '#02060c', 'text-outline-width': 2, width: 22, height: 22 } },
+        { selector: 'node[type="case"]', style: { shape: 'round-rectangle', 'background-color': '#00e5ff', 'border-width': 1, 'border-color': '#bff8ff', width: 28, height: 20 } },
+        { selector: 'node[type="phone"]', style: { shape: 'ellipse', 'background-color': '#4c8dff' } },
+        { selector: 'node[type="account"]', style: { shape: 'diamond', 'background-color': '#ffb000' } },
+        { selector: 'node[hit = 1]', style: { 'border-width': 3, 'border-color': '#ff3b5c' } },
+        { selector: 'edge', style: { width: 2, 'line-color': '#1f6f80', 'curve-style': 'bezier' } },
+        { selector: 'edge[certainty="possible"]', style: { 'line-style': 'dashed', 'line-color': '#ff7a9a' } },
         { selector: 'edge[removed = 1]', style: { 'line-style': 'dotted', opacity: 0.35 } },
-        { selector: ':selected', style: { 'overlay-color': '#8b6cff', 'overlay-opacity': 0.25 } },
+        { selector: ':selected', style: { 'overlay-color': '#00e5ff', 'overlay-opacity': 0.25 } },
       ],
     });
     cy.on('tap', 'node', ev => showNode(data.nodes.find(n => n.id === ev.target.id())));

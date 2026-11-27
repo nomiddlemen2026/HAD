@@ -806,6 +806,8 @@ function createApp(opts = {}) {
   }));
 
   // ---------- static + errors ----------
+  app.use('/vendor/fonts/rajdhani', express.static(path.join(__dirname, '..', 'node_modules', '@fontsource', 'rajdhani', 'files'), { maxAge: '30d' }));
+  app.use('/vendor/fonts/jetbrains-mono', express.static(path.join(__dirname, '..', 'node_modules', '@fontsource', 'jetbrains-mono', 'files'), { maxAge: '30d' }));
   app.use('/vendor/cytoscape', express.static(path.dirname(require.resolve('cytoscape')), { maxAge: '7d' }));
   app.use('/vendor/leaflet', express.static(path.join(path.dirname(require.resolve('leaflet/package.json')), 'dist'), { maxAge: '7d' }));
   app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
