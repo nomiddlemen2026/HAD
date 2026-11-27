@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Evidence · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/js/evidence.js" defer></script>
+</head>
+<body>
+<main>
+<div class="page-head"><div><div class="small muted"><a href="/cases.html">My cases</a> / <a id="case-link" href="#">Case</a> /</div><h1 id="title" style="word-break:break-all">Evidence</h1><p id="sub"></p></div>
+<div class="row"><a class="btn primary" id="download" href="#">Download original</a></div></div>
+<div id="msg"></div>
+<div class="grid cols-2">
+  <section class="card"><h2>Provenance</h2><dl class="kv small" id="meta"></dl></section>
+  <section class="card"><h2>Redacted copy</h2>
+    <p class="small muted">Need to hide your address, IC number or a family member's face before sharing? Edit a copy on your device, then upload it here. The original stays untouched, and the link between them is logged.</p>
+    <div id="derived"></div>
+    <form id="redact-form" novalidate>
+      <div class="field"><label for="rfile">Redacted file</label><input id="rfile" name="file" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.mp3,.m4a,.ogg,.opus,.mp4" required></div>
+      <div class="field"><label for="rnote">What was hidden <span class="opt">(optional)</span></label><input id="rnote" name="note" type="text" maxlength="500" placeholder="e.g. Blurred my home address"></div>
+      <button class="btn" type="submit">Upload redacted copy</button>
+    </form>
+  </section>
+</div>
+<section class="card hidden" id="wa-card">
+  <h2>WhatsApp chat analysis <button class="btn sm" id="parse">Analyse chat export</button></h2>
+  <p class="small muted">Reads a WhatsApp .txt export into a timeline, pulls out phone numbers and repeated identifiers, and flags possibly threatening wording for a human to check. It does not prove who sent anything.</p>
+  <div id="wa"></div>
+</section>
+<section class="card"><h2>Chain of custody <span id="chain"></span></h2>
+  <div class="table-wrap"><table><thead><tr><th>#</th><th>Event</th><th>When (UTC)</th><th>By</th><th>Details</th></tr></thead><tbody id="custody"></tbody></table></div>
+  <p class="small faint">Every entry includes a hash of the previous one, so later edits to this log are detectable. The log cannot be edited or deleted through the database.</p>
+</section>
+</main>
+</body>
+</html>

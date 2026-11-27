@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Case · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/js/uploader.js" defer></script><script src="/js/case.js" defer></script>
+</head>
+<body>
+<main>
+<div class="page-head"><div><div class="small muted"><a href="/cases.html">My cases</a> /</div><h1 id="title">Case</h1><p id="sub"></p></div>
+<div class="row"><a class="btn" id="add-report" href="/report.html">Add report</a><a class="btn primary" id="pdf" href="#">Export police summary PDF</a></div></div>
+<div id="msg"></div>
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="reports">Reports</button>
+  <button role="tab" aria-selected="false" data-tab="evidence">Evidence</button>
+  <button role="tab" aria-selected="false" data-tab="locations">Locations</button>
+  <button role="tab" aria-selected="false" data-tab="timeline">Timeline</button>
+  <button role="tab" aria-selected="false" data-tab="settings">Case settings</button>
+</div>
+<section data-panel="reports" class="card"><ul class="list" id="reports"></ul></section>
+<section data-panel="evidence" class="hidden">
+  <div class="card"><h2>Add evidence</h2><div id="uploader"></div></div>
+  <div class="card"><h2>Evidence files</h2><div class="table-wrap"><table><thead><tr><th>File</th><th>SHA-256</th><th>Uploaded</th><th></th></tr></thead><tbody id="evidence"></tbody></table></div>
+  <p class="small faint">Originals are stored read-only. Open a file to see its chain of custody, download it, parse a WhatsApp export, or add a redacted copy.</p></div>
+</section>
+<section data-panel="locations" class="hidden">
+  <div class="card"><h2>Recorded locations</h2><div id="locations"></div></div>
+  <div class="card"><h2>Add a location</h2>
+  <form id="loc-form" novalidate>
+    <div class="grid cols-2">
+      <div class="field"><label for="lcat">Type of location</label><select id="lcat" name="category" required></select><div class="hint" id="lcat-hint"></div></div>
+      <div class="field"><label for="llabel">Name or description</label><input id="llabel" name="label" type="text" maxlength="120" required></div>
+      <div class="field"><label for="laddr">Address or area</label><input id="laddr" name="addressText" type="text" maxlength="500"></div>
+      <div class="field"><label for="lcountry">Country code <span class="opt">(optional)</span></label><input id="lcountry" name="country" type="text" maxlength="2" placeholder="MY"></div>
+      <div class="field"><label for="llat">Latitude <span class="opt">(optional)</span></label><input id="llat" name="lat" type="number" step="any" min="-90" max="90"></div>
+      <div class="field"><label for="llng">Longitude <span class="opt">(optional)</span></label><input id="llng" name="lng" type="number" step="any" min="-180" max="180"></div>
+      <div class="field"><label for="lprec">Precision</label><select id="lprec" name="precision"><option value="area">General area (about 1 km)</option><option value="approximate">Approximate (about 100 m)</option><option value="exact">Exact</option></select></div>
+      <div class="field"><label for="lsrc">Source</label><input id="lsrc" name="sourceReference" type="text" maxlength="500" required placeholder="e.g. Screenshot E2, company SSM listing, my own statement"></div>
+      <div class="field"><label for="lrel">How reliable is the source?</label><select id="lrel" name="sourceReliability"><option value="unverified">Unverified</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+      <div class="field"><label for="lev">Supporting evidence <span class="opt">(optional)</span></label><select id="lev" name="evidenceId"></select></div>
+    </div>
+    <label class="check field"><input type="checkbox" name="isPrivateResidence"> <span>This is a private home (stored only to about 1 km)</span></label>
+    <label class="check field"><input type="checkbox" name="isVictimLocation"> <span>This is my own location (never treated as the suspect&#39;s)</span></label>
+    <button class="btn" type="submit">Save location</button>
+  </form></div>
+</section>
+<section data-panel="timeline" class="card hidden"><ul class="timeline" id="timeline"></ul></section>
+<section data-panel="settings" class="card hidden">
+  <form id="case-edit" novalidate>
+    <div class="field"><label for="etitle">Title</label><input id="etitle" name="title" type="text" maxlength="120" required></div>
+    <div class="field"><label for="edesc">Private notes</label><textarea id="edesc" name="description" maxlength="5000"></textarea></div>
+    <div class="field"><label for="estatus">Status</label><select id="estatus" name="status"><option value="open">Open</option><option value="closed">Closed</option></select></div>
+    <button class="btn" type="submit">Save</button>
+  </form>
+</section>
+</main>
+</body>
+</html>

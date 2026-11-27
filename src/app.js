@@ -225,6 +225,7 @@ function createApp(opts = {}) {
     res.json({ ok: true, message: 'Password updated. Please log in.' });
   }));
 
+  app.get('/api/auth/session', (req, res) => res.json({ user: req.user || null }));
   app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: req.user }));
 
   // Account deletion with lawful-retention handling.
@@ -282,6 +283,27 @@ function createApp(opts = {}) {
       disclaimers: PUBLIC_DISCLAIMERS,
       correctionLink: '/appeal.html',
     });
+  }));
+
+  app.get('/api/me/summary', requireAuth, wrap((req, res) => {
+    const byStatus = {};
+    for (const r of db.prepare('SELECT status, COUNT(*) n FROM reports WHERE reporter_id = ? GROUP BY status').all(req.user.id)) byStatus[r.status] = r.n;
+    const out = {
+      cases: db.prepare("SELECT COUNT(*) n FROM cases WHERE owner_id = ? AND title != '[deleted]'").get(req.user.id).n,
+      openCases: db.prepare("SELECT COUNT(*) n FROM cases WHERE owner_id = ? AND status = 'open'").get(req.user.id).n,
+      reportsByStatus: byStatus,
+      evidence: db.prepare("SELECT COUNT(*) n FROM evidence e JOIN cases c ON c.id = e.case_id WHERE c.owner_id = ? AND e.status = 'active'").get(req.user.id).n,
+      numbersReported: db.prepare('SELECT COUNT(DISTINCT phone_e164) n FROM reports WHERE reporter_id = ?').get(req.user.id).n,
+      recentReports: db.prepare('SELECT * FROM reports WHERE reporter_id = ? ORDER BY created_at DESC LIMIT 5').all(req.user.id).map(reportOut),
+    };
+    if (isStaff(req.user)) {
+      out.staff = {
+        pendingReview: db.prepare("SELECT COUNT(*) n FROM reports WHERE status = 'pending_review'").get().n,
+        openAppeals: db.prepare("SELECT COUNT(*) n FROM appeals WHERE status = 'open'").get().n,
+        published: db.prepare("SELECT COUNT(*) n FROM reports WHERE status = 'published'").get().n,
+      };
+    }
+    res.json(out);
   }));
 
   // ---------- cases ----------

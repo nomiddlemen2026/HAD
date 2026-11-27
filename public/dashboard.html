@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Dashboard · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/js/search-widget.js" defer></script><script src="/js/dashboard.js" defer></script>
+</head>
+<body>
+<main>
+<div class="page-head"><div><h1>Dashboard</h1><p>Your private overview. Only you can see this.</p></div><a class="btn primary" href="/report.html">Report a threat</a></div>
+<div id="msg"></div>
+<div class="grid cols-4" id="stats"></div>
+<div id="staff" class="hidden" style="margin-top:16px"></div>
+<div class="grid cols-2" style="margin-top:16px">
+  <section class="card"><h2>Recent reports <a class="small" href="/cases.html">All cases</a></h2><ul class="list" id="recent"></ul></section>
+  <section class="card"><h2>Check a number</h2><div id="search-root"></div></section>
+</div>
+<section class="card" style="margin-top:16px">
+  <h2>Staying safe</h2>
+  <ul class="muted small">
+    <li>In immediate danger, call <strong>999</strong> (or 112 from a mobile).</li>
+    <li>Do not delete threatening messages. Export the chat and upload it here, then make a police report.</li>
+    <li>Do not pay more money to stop threats. Lost money to a scam? Call the National Scam Response Centre at <strong>997</strong> as soon as possible.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>

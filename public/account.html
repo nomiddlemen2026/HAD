@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Account · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/js/account.js" defer></script>
+</head>
+<body>
+<main>
+<div class="page-head"><div><h1>Account</h1><p>Manage your login and your data.</p></div><button class="btn" id="logout">Log out</button></div>
+<div id="msg"></div>
+<section class="card"><h2>Your details</h2><dl class="kv" id="me"></dl><p class="small muted" style="margin-top:12px">To change your password, log out and use <a href="/forgot.html">Forgot password</a>.</p></section>
+<section class="card"><h2>Delete my account</h2>
+  <p class="muted">This deletes your login, your cases, your reports and your evidence files. It cannot be undone.</p>
+  <p class="muted small">Exception: if a case is under a <strong>legal hold</strong> (for example because the police asked us to preserve it), that case and its evidence are kept as required by law, but your account and personal details are still removed.</p>
+  <form id="delete-form" class="row" novalidate>
+    <label for="dpw" class="skip">Password</label>
+    <input id="dpw" name="password" type="password" autocomplete="current-password" placeholder="Enter your password to confirm" style="flex:1;min-width:220px" required>
+    <button class="btn danger" type="submit">Delete my account</button>
+  </form>
+</section>
+</main>
+</body>
+</html>

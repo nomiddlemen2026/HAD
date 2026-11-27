@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corrections & takedowns · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/js/appeal.js" defer></script>
+</head>
+<body>
+<div class="section-wrap prose">
+<h1>Corrections, appeals &amp; takedowns</h1>
+<p class="muted">If a published report about a number is wrong, for example because the number was reassigned to you, ask us to correct or remove it. You do not need an account. Your contact details are seen only by moderators.</p>
+<div id="msg"></div>
+<form id="appeal-form" class="card" novalidate>
+  <div class="field"><label for="type">Request type</label><select id="type" name="type" required><option value="takedown">Takedown: remove reports about my number</option><option value="appeal">Appeal: I dispute a report</option><option value="correction">Correction: something in a report is inaccurate</option></select></div>
+  <div class="field"><label for="phone">Phone number concerned</label><input id="phone" name="phone" type="tel" required></div>
+  <div class="field"><label for="requesterName">Your name</label><input id="requesterName" name="requesterName" type="text" maxlength="100" required></div>
+  <div class="field"><label for="requesterContact">Contact details (email or phone)</label><input id="requesterContact" name="requesterContact" type="text" maxlength="200" required></div>
+  <div class="field"><label for="reason">Reason</label><textarea id="reason" name="reason" maxlength="5000" required placeholder="e.g. I have had this number since November 2026; the reports are about the previous owner. I can provide my telco registration letter."></textarea><div class="hint">At least 20 characters.</div></div>
+  <button class="btn primary" type="submit">Send request</button>
+</form>
+</div>
+</body>
+</html>

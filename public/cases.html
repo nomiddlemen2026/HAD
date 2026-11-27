@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>My cases · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/js/cases.js" defer></script>
+</head>
+<body>
+<main>
+<div class="page-head"><div><h1>My cases &amp; evidence</h1><p>Private case files. Only you, and moderators when reviewing, can open them.</p></div><a class="btn primary" href="/report.html">Report a threat</a></div>
+<div id="msg"></div>
+<section class="card"><ul class="list" id="cases"></ul></section>
+<section class="card"><h2>Start an empty case</h2>
+<form id="case-form" class="grid cols-2" novalidate>
+  <div class="field"><label for="title">Title</label><input id="title" name="title" type="text" minlength="3" maxlength="120" required></div>
+  <div class="field"><label for="description">Private notes <span class="opt">(optional)</span></label><input id="description" name="description" type="text" maxlength="5000"></div>
+  <div><button class="btn" type="submit">Create case</button></div>
+</form></section>
+</main>
+</body>
+</html>

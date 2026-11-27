@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reset password · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/js/auth.js" defer></script>
+</head>
+<body>
+<div class="auth-wrap"><div class="card auth-card">
+  <h1 style="font-size:1.5rem">Reset your password</h1>
+  <p class="muted">Enter your email and we will send a reset link if an account exists.</p>
+  <div id="msg"></div>
+  <form id="forgot-form" novalidate>
+    <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+    <button class="btn primary block" type="submit">Send reset link</button>
+  </form>
+  <p class="small" style="margin-top:14px"><a href="/login.html">Back to log in</a></p>
+</div></div>
+</body>
+</html>

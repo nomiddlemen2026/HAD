@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create account · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/js/auth.js" defer></script>
+</head>
+<body>
+<div class="auth-wrap"><div class="card auth-card">
+  <h1 style="font-size:1.5rem">Create a private account</h1>
+  <p class="muted">Your account lets you file reports and keep evidence. Nothing you submit is public unless a moderator reviews it, and your name is never shown.</p>
+  <div id="msg"></div>
+  <form id="register-form" novalidate>
+    <div class="field"><label for="displayName">Display name</label><input id="displayName" name="displayName" type="text" maxlength="60" autocomplete="nickname" required><div class="hint">Only you and moderators see this. A nickname is fine.</div></div>
+    <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required><div class="hint">Used for login and password recovery. Use an email the harasser cannot access.</div></div>
+    <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" minlength="10" autocomplete="new-password" required><div class="hint">At least 10 characters.</div></div>
+    <label class="check field"><input type="checkbox" name="terms" required> <span>I agree to the <a href="/terms.html" target="_blank">terms</a> and understand that false reports can be removed and may have legal consequences.</span></label>
+    <button class="btn primary block" type="submit">Create account</button>
+  </form>
+  <p class="small" style="margin-top:14px">Already registered? <a href="/login.html">Log in</a></p>
+</div></div>
+</body>
+</html>

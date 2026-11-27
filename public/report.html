@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Report a threat · H.A.D</title>
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/core.js" defer></script><script src="/js/uploader.js" defer></script><script src="/js/report.js" defer></script>
+</head>
+<body>
+<main>
+<div class="page-head"><div><h1>Report a threat</h1><p>Private by default. Only you and moderators can see what you write here.</p></div></div>
+<div id="msg"></div>
+<form id="report-form" novalidate>
+<input type="hidden" name="idempotencyKey">
+<div class="grid cols-2">
+  <section class="card">
+    <h2>1. The number</h2>
+    <div class="field"><label for="phone">Suspected phone number</label><input id="phone" name="phone" type="tel" inputmode="tel" placeholder="012-345 6789 or +60 12-345 6789" required><div class="hint">Numbers without a country code are treated as Malaysian.</div></div>
+    <div class="field"><label for="channel">Communication channel</label><select id="channel" name="channel" required></select></div>
+    <div class="field"><label for="category">Threat category</label><select id="category" name="category" required></select></div>
+    <div class="field"><label for="incidentAt">Date and time <span class="opt">(optional)</span></label><input id="incidentAt" name="incidentAt" type="datetime-local"></div>
+    <div class="field"><label for="caseId">Add to case</label><select id="caseId" name="caseId"></select></div>
+    <div class="field" id="newCaseField"><label for="caseTitle">New case title</label><input id="caseTitle" name="caseTitle" type="text" maxlength="120" placeholder="e.g. Ahlong threats since October"></div>
+  </section>
+  <section class="card">
+    <h2>2. What happened</h2>
+    <div class="field"><label for="description">Description</label><textarea id="description" name="description" rows="7" required placeholder="What was said or done, how often, and anything that scared you. Write in any language."></textarea><div class="hint">Tip: you do not need to include your home address. If you do, it stays private.</div></div>
+    <div class="field"><label for="relatedPhones">Other numbers used <span class="opt">(optional)</span></label><textarea id="relatedPhones" name="relatedPhones" rows="2" placeholder="One per line"></textarea><div class="hint">Kept private and marked unverified. They are never linked publicly.</div></div>
+    <div class="field"><label for="relatedBankAccounts">Bank accounts they asked you to pay into <span class="opt">(optional)</span></label><textarea id="relatedBankAccounts" name="relatedBankAccounts" rows="2" placeholder="One per line"></textarea></div>
+    <div class="field"><label for="policeReportRef">Police report reference <span class="opt">(optional)</span></label><input id="policeReportRef" name="policeReportRef" type="text" maxlength="60" placeholder="e.g. IPD/BRICKFIELDS/012345/26"></div>
+  </section>
+</div>
+<section class="card">
+  <h2>3. Locations <span class="small muted">(optional)</span></h2>
+  <p class="small muted">Each type of place is stored separately and never merged. None are shown publicly.</p>
+  <div class="grid cols-2">
+    <fieldset><legend>Where it happened</legend>
+      <div class="field"><label for="incLabel">Place</label><input id="incLabel" name="incLabel" type="text" maxlength="120" placeholder="e.g. Outside my workplace"></div>
+      <div class="field"><label for="incAddress">Address or area</label><input id="incAddress" name="incAddress" type="text" maxlength="500" placeholder="e.g. SS2, Petaling Jaya"></div>
+      <label class="check"><input type="checkbox" name="incIsHome"> <span>This is my home (stored only to about 1 km, never public)</span></label>
+    </fieldset>
+    <fieldset><legend>A place mentioned in the threat</legend>
+      <div class="field"><label for="thrLabel">What they said</label><input id="thrLabel" name="thrLabel" type="text" maxlength="120" placeholder="e.g. Said they will come to my mother's shop"></div>
+      <div class="field"><label for="thrAddress">Address or area mentioned</label><input id="thrAddress" name="thrAddress" type="text" maxlength="500"></div>
+      <p class="hint">A place mentioned in a threat is often the victim's, not the sender's. It is never treated as the sender's location.</p>
+    </fieldset>
+  </div>
+</section>
+<section class="card">
+  <h2>4. Evidence</h2>
+  <p class="small muted">Screenshots, WhatsApp chat exports (.txt), voice notes, videos, receipts or police reports. JPG, PNG, WEBP, PDF, TXT, MP3, M4A, OGG, OPUS, MP4 · up to 25 MB each. Originals are fingerprinted and never altered.</p>
+  <div id="uploader"></div>
+</section>
+<div class="row" style="margin-top:16px"><button class="btn primary" type="submit" id="submit">Submit private report</button><span class="small faint">Your draft is saved in this browser until it is submitted.</span></div>
+</form>
+</main>
+</body>
+</html>
