@@ -51,6 +51,11 @@ function createApp(opts = {}) {
       appeals: [5, 60 * 60 * 1000],
     }, opts.limits || {}),
   };
+  config.tiles = {
+    url: opts.tileUrl || process.env.HAD_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: process.env.HAD_TILE_ATTRIBUTION || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  };
+  const tileOrigin = (() => { try { return new URL(config.tiles.url.replace(/\{[a-z]\}/g, 'a')).origin; } catch (_) { return null; } })();
   const originalsDir = path.join(config.storageDir, 'originals');
   const tmpDir = path.join(config.storageDir, 'tmp');
   fs.mkdirSync(originalsDir, { recursive: true });
@@ -68,7 +73,7 @@ function createApp(opts = {}) {
   app.locals.config = config;
   app.disable('x-powered-by');
   app.set('trust proxy', opts.trustProxy ?? 1);
-  app.use(helmet({ contentSecurityPolicy: { directives: { 'script-src': ["'self'"], 'img-src': ["'self'", 'data:'] } } }));
+  app.use(helmet({ contentSecurityPolicy: { directives: { 'script-src': ["'self'"], 'img-src': ["'self'", 'data:', ...(tileOrigin ? [tileOrigin] : [])] } } }));
   app.use(express.json({ limit: '200kb' }));
   app.use(cookieParser());
 
@@ -305,6 +310,62 @@ function createApp(opts = {}) {
     }
     res.json(out);
   }));
+
+  // ---------- intelligence map ----------
+  // Categories that may ever appear on the community map, and how.
+  const COMMUNITY_CATEGORIES = ['public_business_address', 'officially_confirmed_suspect_location', 'incident_location'];
+  const SOURCE_SHOWN_PUBLICLY = ['public_business_address', 'officially_confirmed_suspect_location'];
+
+  app.get('/api/map/config', (req, res) => res.json({ tiles: config.tiles, categories: LOCATION_CATEGORIES }));
+
+  app.get('/api/map/locations', requireAuth, wrap((req, res) => {
+    const scope = oneOf(req.query.scope || 'mine', ['mine', 'community', 'all'], 'scope');
+    if (scope === 'all' && !isStaff(req.user)) throw new HttpError(403, 'FORBIDDEN', 'Only moderators can view all locations.');
+    if (scope === 'mine') {
+      const rows = db.prepare(`SELECT l.*, c.title AS case_title, e.original_filename AS evidence_name FROM locations l JOIN cases c ON c.id = l.case_id
+        LEFT JOIN evidence e ON e.id = l.evidence_id WHERE c.owner_id = ? ORDER BY l.created_at`).all(req.user.id);
+      return res.json({ scope, locations: rows.map(l => ({ ...locationOut(l), caseTitle: l.case_title, evidenceName: l.evidence_name, own: true })) });
+    }
+    if (scope === 'all') {
+      audit(db, req.user.id, 'staff_map_all', null, null, ip(req));
+      const rows = db.prepare(`SELECT l.*, c.title AS case_title, e.original_filename AS evidence_name FROM locations l JOIN cases c ON c.id = l.case_id
+        LEFT JOIN evidence e ON e.id = l.evidence_id ORDER BY l.created_at DESC LIMIT 2000`).all();
+      return res.json({ scope, locations: rows.map(l => ({ ...locationOut(l), caseTitle: l.case_title, evidenceName: l.evidence_name, communityVisible: !!l.community_visible })) });
+    }
+    // Community: only moderator-approved, verified or corroborated, never homes,
+    // victims' locations, IP estimates or places named in threats.
+    const rows = db.prepare(`SELECT l.* FROM locations l WHERE l.community_visible = 1 AND l.verification_status IN ('verified','corroborated')
+      AND l.is_private_residence = 0 AND l.is_victim_location = 0 AND l.category IN (${COMMUNITY_CATEGORIES.map(() => '?').join(',')})
+      AND l.lat IS NOT NULL ORDER BY l.last_verified_at DESC LIMIT 1000`).all(...COMMUNITY_CATEGORIES);
+    res.json({ scope, locations: rows.map(communityLocationOut) });
+  }));
+
+  function communityLocationOut(l) {
+    const isIncident = l.category === 'incident_location';
+    // Incidents are shown only as a ~1 km area so that no victim can be pinpointed.
+    const lat = isIncident ? Number(l.lat.toFixed(2)) : l.lat;
+    const lng = isIncident ? Number(l.lng.toFixed(2)) : l.lng;
+    return {
+      id: l.id, category: l.category, label: isIncident ? 'Reported incident area' : l.label,
+      addressText: isIncident ? null : l.address_text, lat, lng, precision: isIncident ? 'area' : l.precision, country: l.country,
+      sourceReference: SOURCE_SHOWN_PUBLICLY.includes(l.category) ? l.source_reference : 'Victim report with evidence, reviewed by a moderator',
+      sourceReliability: l.source_reliability, verificationStatus: l.verification_status, collectedAt: l.collected_at.slice(0, 10),
+      lastVerifiedAt: l.last_verified_at, evidence: l.evidence_id ? 'Supporting evidence held privately by H.A.D and reviewed by a moderator' : 'No linked evidence file',
+    };
+  }
+
+  app.get('/api/mod/locations', requireRole('moderator', 'admin'), wrap((req, res) => {
+    const rows = db.prepare(`SELECT l.*, c.title AS case_title, e.original_filename AS evidence_name FROM locations l JOIN cases c ON c.id = l.case_id
+      LEFT JOIN evidence e ON e.id = l.evidence_id ORDER BY (l.verification_status IN ('unverified','approximate','unknown')) DESC, l.created_at DESC LIMIT 300`).all();
+    res.json({ locations: rows.map(l => ({ ...locationOut(l), caseTitle: l.case_title, evidenceName: l.evidence_name, communityVisible: !!l.community_visible, communityEligible: communityEligible(l) === null })) });
+  }));
+
+  function communityEligible(l) {
+    if (l.is_private_residence || l.is_victim_location) return 'Private homes and victims\' own locations can never be shown on the community map.';
+    if (!COMMUNITY_CATEGORIES.includes(l.category)) return 'This type of location cannot be shown on the community map (it may point to a victim, or is unreliable).';
+    if (l.lat === null || l.lat === undefined) return 'A location needs coordinates to appear on the map.';
+    return null;
+  }
 
   // ---------- cases ----------
   app.get('/api/cases', requireAuth, wrap((req, res) => {
@@ -661,8 +722,17 @@ function createApp(opts = {}) {
     if (status === 'verified' && !['high', 'official'].includes(l.source_reliability)) throw new HttpError(400, 'VALIDATION', 'Only locations from a high-reliability or official source can be marked verified.');
     if (status === 'verified' && l.category === 'approximate_network_location') throw new HttpError(400, 'VALIDATION', 'A network (IP) location can never be marked verified.');
     if ((l.is_private_residence || l.is_victim_location) && l.category === 'officially_confirmed_suspect_location') throw new HttpError(400, 'VALIDATION', 'Invalid.');
-    db.prepare('UPDATE locations SET verification_status = ?, last_verified_at = ?, updated_at = ? WHERE id = ?').run(status, now(), now(), l.id);
-    audit(db, req.user.id, 'location_verify', l.id, { status });
+    let community = l.community_visible ? 1 : 0;
+    if (req.body.communityVisible !== undefined) community = req.body.communityVisible ? 1 : 0;
+    if (!['verified', 'corroborated'].includes(status)) community = 0; // un-verifying always removes it from the map
+    if (community) {
+      const why = communityEligible(l);
+      if (why) throw new HttpError(400, 'NOT_ELIGIBLE', why);
+    }
+    db.prepare(`UPDATE locations SET verification_status = ?, last_verified_at = ?, updated_at = ?, community_visible = ?,
+      community_approved_by = CASE WHEN ? = 1 THEN ? ELSE NULL END, community_approved_at = CASE WHEN ? = 1 THEN ? ELSE NULL END WHERE id = ?`)
+      .run(status, now(), now(), community, community, req.user.id, community, now(), l.id);
+    audit(db, req.user.id, 'location_verify', l.id, { status, communityVisible: !!community });
     res.json({ location: locationOut(db.prepare('SELECT * FROM locations WHERE id = ?').get(l.id)) });
   }));
 
@@ -687,6 +757,7 @@ function createApp(opts = {}) {
   }));
 
   // ---------- static + errors ----------
+  app.use('/vendor/leaflet', express.static(path.join(path.dirname(require.resolve('leaflet/package.json')), 'dist'), { maxAge: '7d' }));
   app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
   app.use('/api', (req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found.' } }));
 
@@ -738,7 +809,7 @@ function locationOut(l) {
   return { id: l.id, caseId: l.case_id, reportId: l.report_id, category: l.category, label: l.label, addressText: l.address_text, lat: l.lat, lng: l.lng,
     precision: l.precision, isPrivateResidence: !!l.is_private_residence, isVictimLocation: !!l.is_victim_location, sourceReference: l.source_reference,
     sourceReliability: l.source_reliability, collectedAt: l.collected_at, country: l.country, verificationStatus: l.verification_status, lastVerifiedAt: l.last_verified_at, updatedAt: l.updated_at,
-    evidenceId: l.evidence_id };
+    evidenceId: l.evidence_id, communityVisible: !!l.community_visible };
 }
 
 module.exports = { createApp, PUBLIC_DISCLAIMERS, LOCATION_CATEGORIES, REPORT_CATEGORIES, CHANNELS };

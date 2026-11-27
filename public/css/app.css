@@ -237,3 +237,27 @@ progress { width: 120px; accent-color: var(--purple); }
   body { background: #fff; color: #000; }
   .card { border-color: #ccc; background: #fff; }
 }
+
+/* ---------- map ---------- */
+.map-layout { display: grid; grid-template-columns: 1fr 260px; gap: 16px; margin-bottom: 16px; }
+.map-card { padding: 0; overflow: hidden; }
+#map { height: 560px; background: #0e1530; }
+.map-side h3 { font-size: .9rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.legend-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.mk { width: 16px; height: 16px; border: 2px solid #0a0f1f; box-shadow: 0 0 0 1px rgba(255,255,255,.35); flex: none; }
+.mk.circle { border-radius: 50%; }
+.mk.square { border-radius: 3px; }
+.mk.diamond { transform: rotate(45deg); border-radius: 2px; width: 13px; height: 13px; }
+.mk.ring { border-radius: 50%; background: transparent !important; border: 3px solid currentColor; box-shadow: none; }
+.mk.tri { width: 0; height: 0; border: 0; box-shadow: none; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 16px solid currentColor; background: transparent !important; }
+.mk.area { border-radius: 50%; border: 2px dashed currentColor; background: transparent !important; box-shadow: none; }
+.had-pin { display: grid; place-items: center; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.leaflet-popup-content { margin: 12px 14px; font: 13px/1.5 system-ui, sans-serif; min-width: 220px; }
+.leaflet-popup-content .t { font-size: 14px; }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-control-attribution { background: rgba(10,15,31,.8) !important; color: var(--muted) !important; }
+.leaflet-control-attribution a { color: var(--blue) !important; }
+.leaflet-bar a { background: var(--surface); color: var(--text); border-color: var(--border); }
+@media (max-width: 960px) { .map-layout { grid-template-columns: 1fr; } #map { height: 420px; } }
+@media (max-width: 520px) { #map { height: 360px; } }

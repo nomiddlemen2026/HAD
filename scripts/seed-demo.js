@@ -55,9 +55,13 @@ const server = app.listen(0, async () => {
     await victim('POST', `/api/cases/${c1.id}/locations`, { category: 'incident_location', label: '[DEMO] My home (paint splashed)', addressText: 'Shah Alam (demo)', lat: 3.0733, lng: 101.5185, precision: 'exact', isPrivateResidence: true, isVictimLocation: true, sourceReference: 'Victim statement', country: 'MY', reportId: r1.id });
     await victim('POST', `/api/cases/${c1.id}/locations`, { category: 'location_mentioned_in_threat', label: '[DEMO] "We know your office"', addressText: 'Petaling Jaya (demo)', precision: 'area', sourceReference: 'WhatsApp export E1, line 5', evidenceId: ev1.id, country: 'MY' });
     await victim('POST', `/api/cases/${c1.id}/locations`, { category: 'approximate_network_location', label: '[DEMO] IP lookup of a link they sent', lat: 3.139, lng: 101.6869, precision: 'exact', sourceReliability: 'high', sourceReference: 'Free IP lookup (demo)', country: 'MY' });
+    const biz = (await victim('POST', `/api/cases/${c1.id}/locations`, { category: 'public_business_address', label: '[DEMO] "Easy Credit" office in advert', addressText: 'Jalan Demo 1, Kuala Lumpur (fictional)', lat: 3.1466, lng: 101.6958, precision: 'exact', sourceReliability: 'high', sourceReference: '[DEMO] Newspaper advertisement, 12 Oct 2026', evidenceId: ev1.id, country: 'MY' })).location;
+    await mod('POST', `/api/mod/locations/${biz.id}/verify`, { verificationStatus: 'verified', communityVisible: true });
     await mod('POST', `/api/mod/reports/${r1.id}/decision`, { decision: 'publish', publicSummary: '[DEMO] Reported for loan collection intimidation over WhatsApp, including threats to damage the victim\'s property.' });
 
     const c2 = (await victim2('POST', '/api/cases', { title: '[DEMO] Loan app harassment', description: '' })).case;
+    const inc2 = (await victim2('POST', `/api/cases/${c2.id}/locations`, { category: 'incident_location', label: '[DEMO] Where collectors confronted me', addressText: 'Cheras (demo)', lat: 3.0892, lng: 101.7441, precision: 'exact', sourceReliability: 'medium', sourceReference: 'Victim statement', country: 'MY' })).location;
+    await mod('POST', `/api/mod/locations/${inc2.id}/verify`, { verificationStatus: 'corroborated', communityVisible: true });
     const r2 = (await victim2('POST', `/api/cases/${c2.id}/reports`, { phone: '+60 11-1000 2001', channel: 'phone_call', category: 'threat_family', incidentAt: '2026-11-02', description: '[DEMO] Caller said they would visit my parents if I did not pay. Synthetic.' })).report;
     fd = new FormData(); fd.append('file', new Blob(['[DEMO] call log placeholder']), 'DEMO call log.txt');
     await victim2('POST', `/api/cases/${c2.id}/evidence`, fd, true);

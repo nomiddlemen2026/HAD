@@ -13,7 +13,7 @@ test('migrations run and health reports them', async () => {
   const app = makeApp();
   const r = await request(app).get('/api/health');
   assert.equal(r.status, 200);
-  assert.deepEqual(r.body.migrations, ['001_init.sql']);
+  assert.deepEqual(r.body.migrations, ['001_init.sql', '002_community_map.sql']);
   // Re-running migrate is a no-op
   const { migrate } = require('../src/db');
   assert.deepEqual(migrate(app.locals.db), []);
