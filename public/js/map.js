@@ -51,7 +51,7 @@
     const cfg = await HAD.api('GET', '/api/map/config');
     map = L.map('map', { worldCopyJump: true }).setView([4.2, 108.5], 5);
     let loaded = 0, failed = 0;
-    const tiles = L.tileLayer(cfg.tiles.url, { maxZoom: 18, attribution: cfg.tiles.attribution });
+    const tiles = L.tileLayer(cfg.tiles.url, { maxZoom: 18, attribution: cfg.tiles.attribution, referrerPolicy: 'strict-origin-when-cross-origin' });
     tiles.on('tileload', () => { loaded++; });
     tiles.on('tileerror', () => { failed++; if (failed === 6 && loaded === 0) showFallback('Map tiles could not be loaded (the map provider may be down or blocked).'); });
     tiles.addTo(map);
