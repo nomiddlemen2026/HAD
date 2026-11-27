@@ -1,4 +1,5 @@
--- H.A.D initial schema
+-- H.A.D initial schema (PostgreSQL). Timestamps are ISO-8601 UTC text, flags are 0/1 integers,
+-- matching the original SQLite schema so the application code is unchanged.
 
 CREATE TABLE users (
   id            TEXT PRIMARY KEY,
@@ -62,37 +63,6 @@ CREATE TABLE reports (
 CREATE INDEX idx_reports_phone ON reports(phone_e164, status);
 CREATE INDEX idx_reports_reporter ON reports(reporter_id, created_at);
 
--- Location records. Categories are separate by design and must never be merged.
-CREATE TABLE locations (
-  id                  TEXT PRIMARY KEY,
-  case_id             TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
-  report_id           TEXT REFERENCES reports(id) ON DELETE SET NULL,
-  category            TEXT NOT NULL CHECK (category IN (
-                        'incident_location',
-                        'location_mentioned_in_threat',
-                        'voluntarily_shared_location',
-                        'public_business_address',
-                        'approximate_network_location',
-                        'officially_confirmed_suspect_location')),
-  label               TEXT NOT NULL,
-  address_text        TEXT,
-  lat                 REAL,
-  lng                 REAL,
-  precision           TEXT NOT NULL CHECK (precision IN ('exact','approximate','area')),
-  is_private_residence INTEGER NOT NULL DEFAULT 0,
-  is_victim_location  INTEGER NOT NULL DEFAULT 0,
-  source_reference    TEXT NOT NULL,
-  source_reliability  TEXT NOT NULL CHECK (source_reliability IN ('unverified','low','medium','high','official')),
-  collected_at        TEXT NOT NULL,
-  country             TEXT,
-  verification_status TEXT NOT NULL DEFAULT 'unverified' CHECK (verification_status IN ('verified','corroborated','unverified','approximate','unknown','disputed','rejected')),
-  updated_at          TEXT,
-  last_verified_at    TEXT,
-  evidence_id         TEXT REFERENCES evidence(id),
-  created_by          TEXT NOT NULL REFERENCES users(id),
-  created_at          TEXT NOT NULL
-);
-
 CREATE TABLE evidence (
   id                TEXT PRIMARY KEY,
   case_id           TEXT NOT NULL REFERENCES cases(id),
@@ -110,9 +80,41 @@ CREATE TABLE evidence (
 CREATE INDEX idx_evidence_case ON evidence(case_id);
 CREATE INDEX idx_evidence_hash ON evidence(case_id, sha256);
 
+-- Location records. Categories are separate by design and must never be merged.
+CREATE TABLE locations (
+  id                  TEXT PRIMARY KEY,
+  case_id             TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+  report_id           TEXT REFERENCES reports(id) ON DELETE SET NULL,
+  category            TEXT NOT NULL CHECK (category IN (
+                        'incident_location',
+                        'location_mentioned_in_threat',
+                        'voluntarily_shared_location',
+                        'public_business_address',
+                        'approximate_network_location',
+                        'officially_confirmed_suspect_location')),
+  label               TEXT NOT NULL,
+  address_text        TEXT,
+  lat                 DOUBLE PRECISION,
+  lng                 DOUBLE PRECISION,
+  precision           TEXT NOT NULL CHECK (precision IN ('exact','approximate','area')),
+  is_private_residence INTEGER NOT NULL DEFAULT 0,
+  is_victim_location  INTEGER NOT NULL DEFAULT 0,
+  source_reference    TEXT NOT NULL,
+  source_reliability  TEXT NOT NULL CHECK (source_reliability IN ('unverified','low','medium','high','official')),
+  collected_at        TEXT NOT NULL,
+  country             TEXT,
+  verification_status TEXT NOT NULL DEFAULT 'unverified' CHECK (verification_status IN ('verified','corroborated','unverified','approximate','unknown','disputed','rejected')),
+  updated_at          TEXT,
+  last_verified_at    TEXT,
+  evidence_id         TEXT REFERENCES evidence(id),
+  created_by          TEXT NOT NULL REFERENCES users(id),
+  created_at          TEXT NOT NULL
+);
+
+
 -- Append-only chain-of-custody log (processing, redaction and access history).
 CREATE TABLE evidence_events (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  id          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   evidence_id TEXT NOT NULL,
   event_type  TEXT NOT NULL CHECK (event_type IN ('upload','duplicate_upload','access','download','processing','redaction','legal_hold','purge','export')),
   actor_id    TEXT,
@@ -122,10 +124,12 @@ CREATE TABLE evidence_events (
   entry_hash  TEXT NOT NULL
 );
 CREATE INDEX idx_evevents_evidence ON evidence_events(evidence_id);
-CREATE TRIGGER evidence_events_no_update BEFORE UPDATE ON evidence_events
-BEGIN SELECT RAISE(ABORT, 'evidence_events is append-only'); END;
-CREATE TRIGGER evidence_events_no_delete BEFORE DELETE ON evidence_events
-BEGIN SELECT RAISE(ABORT, 'evidence_events is append-only'); END;
+CREATE FUNCTION evidence_events_append_only() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'evidence_events is append-only'; END; $$;
+CREATE TRIGGER evidence_events_no_update BEFORE UPDATE OR DELETE ON evidence_events
+  FOR EACH ROW EXECUTE FUNCTION evidence_events_append_only();
+CREATE TRIGGER evidence_events_no_truncate BEFORE TRUNCATE ON evidence_events
+  FOR EACH STATEMENT EXECUTE FUNCTION evidence_events_append_only();
 
 CREATE TABLE chat_parses (
   id          TEXT PRIMARY KEY,
@@ -161,7 +165,7 @@ CREATE TABLE password_resets (
 );
 
 CREATE TABLE audit_log (
-  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  id        INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   actor_id  TEXT,
   action    TEXT NOT NULL,
   target    TEXT,

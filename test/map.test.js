@@ -5,7 +5,7 @@ const request = require('supertest');
 const { makeApp, newUser, newCase } = require('./helpers');
 
 async function setup() {
-  const app = makeApp();
+  const app = await makeApp();
   const v = await newUser(app); const other = await newUser(app); const mod = await newUser(app, 'moderator');
   const kase = await newCase(v);
   const add = async (body) => (await v.post(`/api/cases/${kase.id}/locations`).send({ sourceReference: 'Victim statement', country: 'MY', ...body })).body.location;
@@ -21,7 +21,7 @@ async function setup() {
 }
 
 test('map config and Leaflet assets are served; CSP allows tile host', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const cfg = await request(app).get('/api/map/config');
   assert.match(cfg.body.tiles.url, /openstreetmap/);
   const js = await request(app).get('/vendor/leaflet/leaflet.js');
@@ -37,7 +37,7 @@ test('"mine" scope shows only own locations; "all" is staff-only', async () => {
   assert.equal((await other.get('/api/map/locations?scope=mine')).body.locations.length, 0);
   assert.equal((await other.get('/api/map/locations?scope=all')).status, 403);
   assert.equal((await mod.get('/api/map/locations?scope=all')).body.locations.length, 6);
-  assert.equal((await request(require('./helpers').makeApp()).get('/api/map/locations?scope=community')).status, 401);
+  assert.equal((await request(await makeApp()).get('/api/map/locations?scope=community')).status, 401);
 });
 
 test('community map: only verified/corroborated AND moderator-approved; incidents blurred to ~1 km; private categories refused', async () => {
