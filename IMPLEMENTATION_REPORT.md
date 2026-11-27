@@ -1,6 +1,6 @@
 # H.A.D: Implementation report (Priority 1 MVP)
 
-Date: 27 November 2026. Scope: Part 15 F, Priority 1. The stack decision was made by the project owner: Node + SQLite now, port to Next.js + Supabase later.
+Date: 27 November 2026. Scope: Part 15 F, Priority 1, plus Priority 2 progress. The stack decision was made by the project owner: Node + SQLite first, then move to Supabase. The move to Supabase (Postgres and Storage) is now done. The front end stays as vanilla HTML and JS rather than Next.js.
 
 ## 1. Completed features
 
@@ -23,7 +23,7 @@ Each item below is implemented end-to-end (database, API and UI) and is covered 
 
 ## 2. Tested features
 
-Automated: `npm test` runs **31 tests, 31 passing** (run 27 Nov 2026).
+Automated: `npm test` runs **45 tests, 45 passing on PostgreSQL 16** (run 27 Nov 2026). Section 2 lists the original 31. The rest are covered under Priority 2 progress.
 
 - Migrations run, and re-running them changes nothing.
 - Auth: register, login, logout, wrong password, the same error message for unknown emails, unauthenticated access blocked, expired session, password reset (generic response, single-use token, other sessions revoked), CSRF header required, httpOnly cookie.
@@ -62,7 +62,7 @@ Automated: `npm test` runs **31 tests, 31 passing** (run 27 Nov 2026).
 | App starts | Yes |
 | Migrations execute | Yes, tested |
 | Authentication works | Yes, tested |
-| Database permissions tested | Yes, as API-level access control (there is no RLS on SQLite). Tested by RT3 and RT9. |
+| Database permissions tested | Yes. Access control is enforced in the API and tested by RT3 and RT9. On Postgres, the tables sit outside `public`, every table has RLS switched on with no policies, and the Supabase API roles have no grants (tested). |
 | Search works with real stored data | Yes, tested |
 | Evidence uploads work | Yes, tested |
 | Map records load correctly | Yes, added in Priority 2 (Leaflet + OpenStreetMap). Every marker is a stored record. API rules are tested. The browser test used stand-in tiles because this sandbox blocks the OpenStreetMap tile server. The tile-failure fallback was also tested. |
@@ -94,9 +94,11 @@ Nothing else needs a key. Future items that may: map tiles (OpenStreetMap is fre
 - Admin UI for user management, audit logs and evidence moderation (role and legal-hold changes exist as API and CLI only)
 
 **Other limitations:**
-- **Stack differs from Part 6** (Next.js, Supabase) by the owner's decision. Access control lives in the API, not database RLS.
+- **Stack differs from Part 6:** the front end is vanilla HTML and JS, not Next.js. The database and file storage are Supabase. Access control lives in the API. RLS is switched on as a second lock, but no per-user policies are written, because the browser never talks to Supabase directly.
 - **No CAPTCHA and no malware scanning.** Files are always served as attachments with `application/octet-stream` and nosniff, and never shown inline. Adding ClamAV is recommended before launch.
 - The rate limiter is in memory. It works for one server only and resets on restart. The daily report cap is stored in the database and survives restarts.
+- The database connection is encrypted. The server certificate is verified only when `DATABASE_CA_CERT` is set.
+- Live Supabase was not reachable from the build sandbox. The Storage client was tested against a local stand-in for the Supabase Storage API, and the database code was tested against Postgres 16. The first real deployment should be checked by hand: register, upload, download and restart.
 - Registration reveals whether an email already has an account (409). This is mitigated by rate limiting. Login and password reset do not reveal it.
 - No in-browser redaction tool. Users redact on their device and upload the copy.
 - No geocoding. Locations are free-text address or area unless coordinates are typed in (this avoids paid APIs).
@@ -123,7 +125,14 @@ Nothing else needs a key. Future items that may: map tiles (OpenStreetMap is fre
 
   Each link and finding lists the reports behind it. Victims see only their own cases, plus a count of how many reviewed reports by other people mention their numbers. No details of other victims' cases are shown. Staff see the full network, with a log entry for each view, and can mark any link as wrong or confirmed. A link marked wrong disappears for everyone.
 - **Tests:** 4 new graph tests. **39 tests in total, all passing.**
-- **Still to do in Priority 2:** Supabase port, map screenshots in the PDF.
+- **Move to Supabase:**
+  - The database is now Postgres (Supabase). Accounts, cases, reports and the custody log survive restarts.
+  - Evidence is stored in a private Supabase Storage bucket, reached only by the server. Originals are write-once, and the server refuses to use a public bucket.
+  - Tables live in their own `had` schema with RLS on, so Supabase's public API cannot reach them.
+  - Custody log appends are serialised per evidence item, so concurrent requests cannot break the hash chain.
+  - The demo runs in a separate `had_demo` schema, with local files only.
+  - **Tests:** 6 new tests. **45 tests in total, all passing on Postgres 16.** The three-device browser walkthrough was repeated on Postgres with no errors.
+- **Still to do in Priority 2:** map screenshots in the PDF.
 
 ## 5. Outstanding bugs
 
@@ -131,14 +140,24 @@ None known after the tests and the three-device browser run. The only open issue
 
 ## 6. Deployment steps
 
-1. A server with Node 20+ and persistent disk (see section 7).
+**Free option: Render + Supabase**
+1. Create a free Supabase project in the Singapore region.
+2. Collect three values. Keep them secret and never commit them:
+   - **Connect > Session pooler** connection string, with the database password filled in. This is `DATABASE_URL`.
+   - **Project URL.** This is `SUPABASE_URL`.
+   - **service_role key.** This is `SUPABASE_SERVICE_ROLE_KEY`.
+3. In Render, sync the Blueprint (`render.yaml`) and enter those values. It creates `had` (real) and `had-demo` (demo).
+4. When `had` is live, register your account, then make it an admin. Run `npm run set-role -- you@example.com admin` locally with `DATABASE_URL` set to the same string.
+5. Optional: add `SMTP_URL` to `had` so password-reset emails are sent.
+6. Backups: the Supabase free tier has no automatic backups. Run `pg_dump "$DATABASE_URL" -n had > backup.sql` regularly and keep it encrypted off-site, or use Supabase Pro (daily backups).
+
+**Own server**
+1. A server with Node 20+ and Postgres 14+ (or Supabase).
 2. `git clone <repo> && cd had && npm ci --omit=dev`
-3. Set the environment from `.env.example`: `NODE_ENV=production`, `HAD_PUBLIC_URL`, `SMTP_URL`, and data paths on persistent disk.
+3. Set the environment from `.env.example`.
 4. `npm run migrate`
-5. Run `npm start` under a process manager (systemd or pm2) behind Caddy or nginx with HTTPS. Secure cookies need HTTPS.
-6. Register your account in the browser, then run `npm run set-role -- you@example.com admin`.
-7. Back up every day: `sqlite3 data/had.db ".backup backup.db"` plus the `storage/` folder, kept off the server and encrypted.
-8. Optional: run the demo on a separate URL with `npm run seed` and the demo environment variables.
+5. Run `npm start` under a process manager (systemd or pm2), behind Caddy or nginx with HTTPS. Secure cookies need HTTPS.
+6. Register, then run `npm run set-role -- you@example.com admin`.
 
 ## 7. Estimated recurring infrastructure costs
 
@@ -152,4 +171,11 @@ Estimates only. Check current provider pricing.
 | SMTP on a free tier | RM0 at low volume | Paid only at high volume |
 | Off-site backups (object storage) | RM0–5 | Many providers have free tiers |
 
-Free platform tiers with temporary disks (for example, free web services that wipe the disk on restart) are **not suitable**. SQLite and the evidence files would be lost. Moving to Supabase in Priority 2 would make free-tier hosting possible: Supabase free tier plus Vercel free tier is about RM0 to start, and Supabase Pro is about US$25 a month at scale.
+Now that data and files live in Supabase, free hosts with temporary disks work. **Render free tier + Supabase free tier costs about RM0 to start.**
+
+Limits to watch on the free tiers:
+- Supabase allows 500 MB of database and 1 GB of file storage.
+- Supabase pauses projects after a week with no activity.
+- Render's free instance sleeps when idle.
+
+Supabase Pro (about US$25 a month) adds daily backups, more storage and no pausing.

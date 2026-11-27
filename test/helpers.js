@@ -3,13 +3,29 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const request = require('supertest');
+const crypto = require('crypto');
+const { after } = require('node:test');
 const { createApp } = require('../src/app');
+const { openDb } = require('../src/db');
 
-function makeApp(opts = {}) {
+// Tests run against a real Postgres. Each app gets its own throw-away schema.
+// Default: a local server on port 5433 (see README "Running the tests").
+const TEST_DB = process.env.TEST_DATABASE_URL || 'postgres://postgres@localhost:5433/postgres';
+const opened = [];
+after(async () => {
+  for (const db of opened) { try { if (!db.closedByTest) await db.dropSchema(); } catch (_) { } try { await db.close(); } catch (_) { } }
+  // Schemas whose pool a test closed on purpose are dropped with a fresh connection.
+  const left = opened.filter(d => d.closedByTest);
+  if (left.length) { const c = openDb({ url: TEST_DB, schema: 'public', max: 1, quiet: true }); for (const d of left) await c.exec(`DROP SCHEMA IF EXISTS "${d.schema}" CASCADE`); await c.close(); }
+});
+
+async function makeApp(opts = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'had-test-'));
   const sent = [];
   const mailer = { configured: true, send: async (to, subject, text) => { sent.push({ to, subject, text }); } };
-  const app = createApp({ dbPath: path.join(dir, 'test.db'), storageDir: path.join(dir, 'storage'), quiet: true, mailer, ...opts,
+  const db = openDb({ url: TEST_DB, schema: 't_' + crypto.randomBytes(6).toString('hex'), max: 4, quiet: true });
+  opened.push(db);
+  const app = await createApp({ db, storageDir: path.join(dir, 'storage'), localStorage: true, quiet: true, mailer, ...opts,
     limits: { register: [1000, 3600e3], login: [1000, 900e3], search: [1000, 60e3], uploads: [1000, 3600e3], appeals: [1000, 3600e3], ...(opts.limits || {}) } });
   app.locals.dir = dir;
   app.locals.sent = sent;
@@ -36,7 +52,7 @@ async function newUser(app, role = 'user') {
   const res = await c.post('/api/auth/register').send({ email, password: 'correct-horse-battery', displayName: 'Tester ' + n });
   if (res.status !== 201) throw new Error('register failed ' + res.status + JSON.stringify(res.body));
   c.user = res.body.user; c.email = email;
-  if (role !== 'user') app.locals.db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, c.user.id);
+  if (role !== 'user') await app.locals.db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, c.user.id);
   return c;
 }
 

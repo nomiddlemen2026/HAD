@@ -1,23 +1,29 @@
 'use strict';
 /**
- * Creates a SEPARATE demo database (default data/demo.db) filled with clearly
- * labelled synthetic data. It refuses to touch the real database.
- * Run the demo with:  HAD_DEMO_MODE=1 HAD_DB_PATH=data/demo.db HAD_STORAGE_DIR=storage-demo npm start
+ * Fills a SEPARATE demo schema (default "had_demo") with clearly labelled
+ * synthetic data, wiping it first. It refuses to touch any schema or storage
+ * folder whose name does not contain "demo". Demo evidence files are always
+ * stored on local disk, never in the real Supabase bucket.
+ * Run the demo with:  npm run demo
  */
 const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
-const dbPath = path.resolve(process.env.HAD_DB_PATH || path.join(root, 'data', 'demo.db'));
+const schema = process.env.HAD_DB_SCHEMA || 'had_demo';
 const storageDir = path.resolve(process.env.HAD_STORAGE_DIR || path.join(root, 'storage-demo'));
-if (!/demo/i.test(path.basename(dbPath)) || !/demo/i.test(path.basename(storageDir))) {
-  console.error('Refusing: demo data must go into a database and storage folder whose names contain "demo".');
+if (!/demo/i.test(schema) || !/demo/i.test(path.basename(storageDir))) {
+  console.error('Refusing: demo data must go into a schema and storage folder whose names contain "demo".');
   process.exit(1);
 }
-for (const p of [dbPath, dbPath + '-wal', dbPath + '-shm']) if (fs.existsSync(p)) fs.rmSync(p);
-if (fs.existsSync(storageDir)) { for (const f of fs.readdirSync(path.join(storageDir, 'originals'), { withFileTypes: true }).filter(d => d.isFile())) fs.chmodSync(path.join(storageDir, 'originals', f.name), 0o600); fs.rmSync(storageDir, { recursive: true }); }
+if (fs.existsSync(storageDir)) { const o = path.join(storageDir, 'originals'); if (fs.existsSync(o)) for (const f of fs.readdirSync(o, { withFileTypes: true }).filter(d => d.isFile())) fs.chmodSync(path.join(o, f.name), 0o600); fs.rmSync(storageDir, { recursive: true }); }
 
 const { createApp } = require('../src/app');
-const app = createApp({ dbPath, storageDir, demoMode: true, quiet: true, limits: { register: [100, 1], reportsPerHour: [100, 1] } });
+const { openDb } = require('../src/db');
+
+(async () => {
+const fresh = openDb({ schema });
+await fresh.dropSchema();
+const app = await createApp({ db: fresh, storageDir, localStorage: true, demoMode: true, quiet: true, limits: { register: [100, 1], reportsPerHour: [100, 1] } });
 
 const server = app.listen(0, async () => {
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -41,8 +47,8 @@ const server = app.listen(0, async () => {
     await victim2('POST', '/api/auth/register', { email: 'victim2@demo.had', password: 'demo-password-123', displayName: '[DEMO] Kumar' });
     const m = await mod('POST', '/api/auth/register', { email: 'moderator@demo.had', password: 'demo-password-123', displayName: '[DEMO] Moderator' });
     const a = await admin('POST', '/api/auth/register', { email: 'admin@demo.had', password: 'demo-password-123', displayName: '[DEMO] Admin' });
-    db.prepare("UPDATE users SET role='moderator' WHERE id=?").run(m.user.id);
-    db.prepare("UPDATE users SET role='admin' WHERE id=?").run(a.user.id);
+    await db.prepare("UPDATE users SET role='moderator' WHERE id=?").run(m.user.id);
+    await db.prepare("UPDATE users SET role='admin' WHERE id=?").run(a.user.id);
 
     const c1 = (await victim('POST', '/api/cases', { title: '[DEMO] Ahlong threats after RM3,000 loan', description: 'Synthetic demo case.' })).case;
     const r1 = (await victim('POST', `/api/cases/${c1.id}/reports`, { phone: '+60 11-1000 2001', channel: 'whatsapp_message', category: 'threat_property', incidentAt: '2026-10-14T22:10', description: '[DEMO] Messages demanding RM800 by Friday, threatening to splash red paint on my house. Synthetic text for demonstration.', relatedPhones: '+60 11-1000 2002', relatedBankAccounts: '5000 1234 5678', policeReportRef: 'DEMO/IPD/0001/26' })).report;
@@ -71,9 +77,10 @@ const server = app.listen(0, async () => {
     const anon = mk();
     await anon('POST', '/api/appeals', { type: 'appeal', phone: '+60 11-1000 2003', requesterName: '[DEMO] Number owner', requesterContact: 'owner@demo.had', reason: '[DEMO] I think this number was recycled. Synthetic appeal for demonstration.' });
 
-    console.log(`Demo database created at ${dbPath}`);
+    console.log(`Demo data created in schema "${schema}"`);
     console.log('Logins (password demo-password-123): victim@demo.had, victim2@demo.had, moderator@demo.had, admin@demo.had');
     console.log('Try searching +60 11-1000 2001 (2 published reports) and +60 11-1000 2003 (pending, so nothing public).');
   } catch (e) { console.error(e); process.exitCode = 1; }
-  server.close(); app.locals.db.close();
+  server.close(); await app.locals.db.close();
 });
+})().catch(e => { console.error(e); process.exit(1); });

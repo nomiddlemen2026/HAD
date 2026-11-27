@@ -4,7 +4,7 @@ const assert = require('node:assert');
 const { makeApp, newUser, newCase, baseReport } = require('./helpers');
 
 async function setup() {
-  const app = makeApp();
+  const app = await makeApp();
   const a = await newUser(app); const b = await newUser(app); const mod = await newUser(app, 'moderator');
   const ca = await newCase(a, 'Case A'); const cb = await newCase(b, 'Case B');
   const ra = (await a.post(`/api/cases/${ca.id}/reports`).send(baseReport({ phone: '012-345 6789', relatedPhones: '017-888 9999', relatedBankAccounts: '5000-1234-5678' }))).body.report;
@@ -37,7 +37,7 @@ test('victim view shows only own cases; other cases are never revealed, only rev
   const phone = g.nodes.find(n => n.id === 'phone:+60123456789');
   assert.equal(phone.othersReviewed, 0, 'unreviewed reports by others are not counted');
   // After a moderator publishes B's report, A sees a count (no details)
-  app.locals.db.prepare("INSERT INTO evidence (id, case_id, uploader_id, original_filename, mime_type, size_bytes, sha256, storage_ref, uploaded_at) VALUES ('e1', ?, (SELECT owner_id FROM cases WHERE id = ?), 'x.txt', 'text/plain', 1, 'h', 'x', '2026-01-01')").run(cb.id, cb.id);
+  await app.locals.db.prepare("INSERT INTO evidence (id, case_id, uploader_id, original_filename, mime_type, size_bytes, sha256, storage_ref, uploaded_at) VALUES ('e1', ?, (SELECT owner_id FROM cases WHERE id = ?), 'x.txt', 'text/plain', 1, 'h', 'x', '2026-01-01')").run(cb.id, cb.id);
   assert.equal((await mod.post(`/api/mod/reports/${rb.id}/decision`).send({ decision: 'publish', publicSummary: 'Reported for loan collection intimidation over WhatsApp.' })).status, 200);
   g = (await a.get('/api/graph?scope=mine')).body;
   assert.equal(g.nodes.find(n => n.id === 'phone:+60123456789').othersReviewed, 1);

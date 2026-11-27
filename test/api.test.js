@@ -10,17 +10,17 @@ const { makeApp, client, newUser, newCase, baseReport } = require('./helpers');
 const WA = fs.readFileSync(path.join(__dirname, 'fixtures', 'whatsapp-android.txt'));
 
 test('migrations run and health reports them', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const r = await request(app).get('/api/health');
   assert.equal(r.status, 200);
   assert.deepEqual(r.body.migrations, ['001_init.sql', '002_community_map.sql', '003_relationship_overrides.sql']);
   // Re-running migrate is a no-op
   const { migrate } = require('../src/db');
-  assert.deepEqual(migrate(app.locals.db), []);
+  assert.deepEqual(await migrate(app.locals.db), []);
 });
 
 test('authentication: register, me, logout, login, wrong password, unauthenticated access', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const c = await newUser(app);
   assert.equal((await c.get('/api/auth/me')).body.user.email, c.email);
   assert.equal((await c.post('/api/auth/logout')).status, 200);
@@ -37,7 +37,7 @@ test('authentication: register, me, logout, login, wrong password, unauthenticat
 });
 
 test('registration validation', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const c = client(app);
   assert.equal((await c.post('/api/auth/register').send({ email: 'bad', password: 'correct-horse-battery', displayName: 'x' })).status, 400);
   assert.equal((await c.post('/api/auth/register').send({ email: 'a@b.co', password: 'short', displayName: 'x' })).status, 400);
@@ -45,7 +45,7 @@ test('registration validation', async () => {
 });
 
 test('session cookie is httpOnly and requests without CSRF header are refused', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const r = await request(app).post('/api/auth/register').set('X-HAD-Request', '1').send({ email: 'c@d.co', password: 'correct-horse-battery', displayName: 'C' });
   assert.match(r.headers['set-cookie'][0], /HttpOnly/i);
   assert.match(r.headers['set-cookie'][0], /SameSite=Lax/i);
@@ -54,16 +54,16 @@ test('session cookie is httpOnly and requests without CSRF header are refused', 
 });
 
 test('expired session returns AUTH_EXPIRED', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const c = await newUser(app);
-  app.locals.db.prepare("UPDATE sessions SET expires_at = '2000-01-01T00:00:00.000Z'").run();
+  await app.locals.db.prepare("UPDATE sessions SET expires_at = '2000-01-01T00:00:00.000Z'").run();
   const r = await c.get('/api/cases');
   assert.equal(r.status, 401);
   assert.equal(r.body.error.code, 'AUTH_EXPIRED');
 });
 
 test('password recovery: generic response, token works once, old sessions revoked', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const c = await newUser(app);
   const anon = client(app);
   const r1 = await anon.post('/api/auth/forgot').send({ email: c.email });
@@ -85,14 +85,14 @@ test('phone normalisation and invalid numbers', async () => {
   assert.equal(normalizePhone('12345'), null);
   assert.equal(normalizePhone('abc'), null);
   assert.equal(maskPhone('+60123456789'), '+60 12*****89');
-  const app = makeApp();
+  const app = await makeApp();
   const r = await request(app).get('/api/search?phone=123');
   assert.equal(r.status, 400);
   assert.equal(r.body.error.code, 'INVALID_PHONE');
 });
 
 test('reports: validation, private by default, duplicate + idempotency handling', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const c = await newUser(app);
   const kase = await newCase(c);
   assert.equal((await c.post(`/api/cases/${kase.id}/reports`).send(baseReport({ phone: 'xyz' }))).status, 400);
@@ -121,7 +121,7 @@ test('reports: validation, private by default, duplicate + idempotency handling'
 });
 
 test('evidence: upload, hash, original preserved read-only, duplicate kept, custody log, redacted copy', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const c = await newUser(app);
   const kase = await newCase(c);
   const up = await c.post(`/api/cases/${kase.id}/evidence`).attach('file', WA, 'chat.txt');
@@ -151,12 +151,12 @@ test('evidence: upload, hash, original preserved read-only, duplicate kept, cust
   assert.equal(meta.body.chainIntegrity.ok, true);
   assert.equal(meta.body.derivedCopies.length, 1);
   // Custody log is append-only at the database level
-  assert.throws(() => app.locals.db.prepare('DELETE FROM evidence_events').run(), /append-only/);
-  assert.throws(() => app.locals.db.prepare("UPDATE evidence_events SET actor_id = 'x'").run(), /append-only/);
+  await assert.rejects(app.locals.db.prepare('DELETE FROM evidence_events').run(), /append-only/);
+  await assert.rejects(app.locals.db.prepare("UPDATE evidence_events SET actor_id = 'x'").run(), /append-only/);
 });
 
 test('evidence: rejects bad types, oversize files, missing file; temp files cleaned', async () => {
-  const app = makeApp({ maxUploadBytes: 1024 });
+  const app = await makeApp({ maxUploadBytes: 1024 });
   const c = await newUser(app);
   const kase = await newCase(c);
   assert.equal((await c.post(`/api/cases/${kase.id}/evidence`).attach('file', Buffer.from('MZ...'), 'evil.exe')).status, 415);
@@ -170,7 +170,7 @@ test('evidence: rejects bad types, oversize files, missing file; temp files clea
 });
 
 test('WhatsApp parse via API records processing in custody without touching original', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const c = await newUser(app);
   const kase = await newCase(c);
   const ev = (await c.post(`/api/cases/${kase.id}/evidence`).attach('file', WA, 'chat.txt')).body.evidence;
@@ -183,7 +183,7 @@ test('WhatsApp parse via API records processing in custody without touching orig
 });
 
 test('case PDF export produces a real PDF and is logged', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const c = await newUser(app);
   const kase = await newCase(c);
   await c.post(`/api/cases/${kase.id}/reports`).send(baseReport({ policeReportRef: 'IPD/999/26' }));
@@ -199,7 +199,7 @@ test('case PDF export produces a real PDF and is logged', async () => {
 });
 
 test('moderation: publish requires evidence, PII-free summary, not own report; search then shows masked result', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const victim = await newUser(app);
   const mod = await newUser(app, 'moderator');
   const kase = await newCase(victim);
@@ -223,7 +223,7 @@ test('moderation: publish requires evidence, PII-free summary, not own report; s
 });
 
 test('appeals: public filing, moderator upholds, report taken down', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const victim = await newUser(app);
   const mod = await newUser(app, 'moderator');
   const kase = await newCase(victim);
@@ -242,7 +242,7 @@ test('appeals: public filing, moderator upholds, report taken down', async () =>
 });
 
 test('search rate limit', async () => {
-  const app = makeApp({ limits: { search: [3, 60e3] } });
+  const app = await makeApp({ limits: { search: [3, 60e3] } });
   for (let i = 0; i < 3; i++) assert.equal((await request(app).get('/api/search?phone=0123456789')).status, 200);
   const r = await request(app).get('/api/search?phone=0123456789');
   assert.equal(r.status, 429);
@@ -250,9 +250,9 @@ test('search rate limit', async () => {
 });
 
 test('database failure returns 503 with a clear message', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const c = await newUser(app);
-  app.locals.db.close();
+  app.locals.db.closedByTest = true; await app.locals.db.close();
   const r = await c.get('/api/cases');
   assert.equal(r.status, 503);
   assert.equal(r.body.error.code, 'DB_UNAVAILABLE');
@@ -260,7 +260,7 @@ test('database failure returns 503 with a clear message', async () => {
 });
 
 test('security headers and no secrets in static frontend', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const r = await request(app).get('/');
   assert.equal(r.status, 200);
   assert.ok(r.headers['content-security-policy']);

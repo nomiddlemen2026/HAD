@@ -9,7 +9,7 @@ const { makeApp, client, newUser, newCase, baseReport } = require('./helpers');
 const WA = fs.readFileSync(path.join(__dirname, 'fixtures', 'whatsapp-android.txt'));
 
 test('RT1: false accusation is never auto-published and can be rejected/appealed', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const liar = await newUser(app);
   const mod = await newUser(app, 'moderator');
   const kase = await newCase(liar, 'Fake case');
@@ -23,7 +23,7 @@ test('RT1: false accusation is never auto-published and can be rejected/appealed
   s = await request(app).get('/api/search?phone=0192223333');
   assert.equal(s.body.reviewedReportCount, 0);
   // Reporter cannot self-moderate even if they were a moderator
-  app.locals.db.prepare("UPDATE users SET role='moderator' WHERE id=?").run(liar.user.id);
+  await app.locals.db.prepare("UPDATE users SET role='moderator' WHERE id=?").run(liar.user.id);
   const rep2 = (await liar.post(`/api/cases/${kase.id}/reports`).send(baseReport({ phone: '+60 19-444 5555' }))).body.report;
   const self = await liar.post(`/api/mod/reports/${rep2.id}/decision`).send({ decision: 'publish', publicSummary: 'Reported for loan collection intimidation over WhatsApp.' });
   assert.equal(self.status, 403);
@@ -31,7 +31,7 @@ test('RT1: false accusation is never auto-published and can be rejected/appealed
 });
 
 test('RT2: victim uploads home address — warned, never public, residence coordinates coarsened', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const v = await newUser(app);
   const kase = await newCase(v);
   const r = await v.post(`/api/cases/${kase.id}/reports`).send(baseReport({ description: 'They came to my house at No. 5 Jalan Mawar 3, Taman Melati and splashed red paint.' }));
@@ -50,7 +50,7 @@ test('RT2: victim uploads home address — warned, never public, residence coord
 });
 
 test('RT3: attacker cannot read, download, parse, redact or export another user\'s evidence/case', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const v = await newUser(app);
   const attacker = await newUser(app);
   const kase = await newCase(v);
@@ -73,16 +73,16 @@ test('RT3: attacker cannot read, download, parse, redact or export another user\
   // Path traversal in id is harmless
   assert.equal((await attacker.get('/api/evidence/..%2F..%2Fdata%2Fhad.db/download')).status, 404);
   // Attempts are audited, and no download event was written for the attacker
-  const denied = app.locals.db.prepare("SELECT COUNT(*) n FROM audit_log WHERE action IN ('denied_evidence_access','denied_case_access') AND actor_id = ?").get(attacker.user.id).n;
+  const denied = (await app.locals.db.prepare("SELECT COUNT(*) n FROM audit_log WHERE action IN ('denied_evidence_access','denied_case_access') AND actor_id = ?").get(attacker.user.id)).n;
   assert.ok(denied > 0);
-  const dl = app.locals.db.prepare("SELECT COUNT(*) n FROM evidence_events WHERE actor_id = ? ").get(attacker.user.id).n;
+  const dl = (await app.locals.db.prepare("SELECT COUNT(*) n FROM evidence_events WHERE actor_id = ? ").get(attacker.user.id)).n;
   assert.equal(dl, 0);
   // Attacker's case list is empty
   assert.equal((await attacker.get('/api/cases')).body.cases.length, 0);
 });
 
 test('RT4: 100 fake reports — capped, none published, public count unchanged', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const spammer = await newUser(app);
   const kase = await newCase(spammer);
   const codes = {};
@@ -93,10 +93,10 @@ test('RT4: 100 fake reports — capped, none published, public count unchanged',
   }
   assert.equal(codes[201], 5, 'only 5 accepted per hour');
   assert.equal(codes[429], 95);
-  const pending = app.locals.db.prepare("SELECT COUNT(*) n FROM reports WHERE status='published'").get().n;
+  const pending = (await app.locals.db.prepare("SELECT COUNT(*) n FROM reports WHERE status='published'").get()).n;
   assert.equal(pending, 0);
   // Same number repeatedly from one account is blocked as duplicate
-  const app2 = makeApp();
+  const app2 = await makeApp();
   const s2 = await newUser(app2);
   const k2 = await newCase(s2);
   const results = [];
@@ -104,7 +104,7 @@ test('RT4: 100 fake reports — capped, none published, public count unchanged',
   assert.deepEqual(results, [201, 409, 409, 409, 409, 409, 409, 409, 409, 409]);
   // Distinct reporter count in public search counts accounts, not reports
   const mod = await newUser(app2, 'moderator');
-  const rid = app2.locals.db.prepare('SELECT id FROM reports').get().id;
+  const rid = (await app2.locals.db.prepare('SELECT id FROM reports').get()).id;
   await s2.post(`/api/cases/${k2.id}/evidence`).attach('file', Buffer.from('e'), 'e.txt');
   await mod.post(`/api/mod/reports/${rid}/decision`).send({ decision: 'publish', publicSummary: 'Reported for loan collection intimidation over WhatsApp.' });
   const s = await request(app2).get('/api/search?phone=0123456789');
@@ -112,7 +112,7 @@ test('RT4: 100 fake reports — capped, none published, public count unchanged',
 });
 
 test('RT5: same number used by different people at different times — dates shown, reassignment warning, takedown path', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const v = await newUser(app);
   const mod = await newUser(app, 'moderator');
   const kase = await newCase(v);
@@ -126,7 +126,7 @@ test('RT5: same number used by different people at different times — dates sho
 });
 
 test('RT6: Malaysian prefix used overseas — region labelled as numbering plan only, never a location', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const s = await request(app).get('/api/search?phone=%2B60123456789');
   assert.equal(s.body.numberingRegion, 'MY');
   assert.match(s.body.numberingRegionNote, /not where its user is/);
@@ -135,7 +135,7 @@ test('RT6: Malaysian prefix used overseas — region labelled as numbering plan 
 });
 
 test('RT7: inaccurate IP geolocation — forced to area precision, low reliability, cannot be verified', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const v = await newUser(app);
   const mod = await newUser(app, 'moderator');
   const kase = await newCase(v);
@@ -150,7 +150,7 @@ test('RT7: inaccurate IP geolocation — forced to area precision, low reliabili
 });
 
 test('RT8: two numbers wrongly associated — related numbers stay private and unverified, never merged in search', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const v = await newUser(app);
   const mod = await newUser(app, 'moderator');
   const kase = await newCase(v);
@@ -164,7 +164,7 @@ test('RT8: two numbers wrongly associated — related numbers stay private and u
 });
 
 test('RT9: regular user cannot reach moderator/admin functions; attempts audited', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const u = await newUser(app);
   const mod = await newUser(app, 'moderator');
   const calls = [
@@ -178,7 +178,7 @@ test('RT9: regular user cannot reach moderator/admin functions; attempts audited
   for (const r of await Promise.all(calls)) assert.equal(r.status, 403);
   assert.equal((await u.get('/api/auth/me')).body.user.role, 'user');
   assert.equal((await mod.get('/api/auth/me')).body.user.role, 'moderator');
-  const n = app.locals.db.prepare("SELECT COUNT(*) n FROM audit_log WHERE action='forbidden_attempt'").get().n;
+  const n = (await app.locals.db.prepare("SELECT COUNT(*) n FROM audit_log WHERE action='forbidden_attempt'").get()).n;
   assert.equal(n, 7);
   // Mass-assignment: role in register body is ignored
   const c = client(app);
@@ -187,7 +187,7 @@ test('RT9: regular user cannot reach moderator/admin functions; attempts audited
 });
 
 test('RT10: account deletion with legal hold keeps held case + evidence, purges the rest', async () => {
-  const app = makeApp();
+  const app = await makeApp();
   const v = await newUser(app);
   const admin = await newUser(app, 'admin');
   const held = await newCase(v, 'Case under police investigation');
@@ -204,7 +204,7 @@ test('RT10: account deletion with legal hold keeps held case + evidence, purges 
   const st = path.join(app.locals.dir, 'storage', 'originals');
   assert.ok(fs.existsSync(path.join(st, evHeld.id)), 'held evidence preserved');
   assert.ok(!fs.existsSync(path.join(st, evFree.id)), 'non-held evidence deleted');
-  const u = app.locals.db.prepare('SELECT * FROM users WHERE id = ?').get(v.user.id);
+  const u = await app.locals.db.prepare('SELECT * FROM users WHERE id = ?').get(v.user.id);
   assert.equal(u.email, null); assert.equal(u.status, 'deleted');
   assert.equal((await v.get('/api/cases')).status, 401);
   assert.equal((await v.post('/api/auth/login').send({ email: v.email, password: 'correct-horse-battery' })).status, 401);
@@ -214,6 +214,6 @@ test('RT10: account deletion with legal hold keeps held case + evidence, purges 
   assert.ok(meta.body.custody.some(e => e.event_type === 'legal_hold'));
   assert.equal((await admin.get(`/api/evidence/${evFree.id}`)).status, 410);
   // Purge recorded in custody chain of the deleted item
-  const purge = app.locals.db.prepare("SELECT COUNT(*) n FROM evidence_events WHERE evidence_id = ? AND event_type = 'purge'").get(evFree.id).n;
+  const purge = (await app.locals.db.prepare("SELECT COUNT(*) n FROM evidence_events WHERE evidence_id = ? AND event_type = 'purge'").get(evFree.id)).n;
   assert.equal(purge, 1);
 });

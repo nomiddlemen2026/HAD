@@ -1,7 +1,37 @@
-# One-click DEMO deployment on Render's free tier.
-# The free tier has no persistent disk, so this runs ONLY the labelled demo
-# (synthetic data is re-created on every start). Do not use it for real reports.
+# Render free tier, two services, both on your Supabase database:
+#
+#  had       REAL service. Accounts, cases and reports are stored in the Supabase
+#            database (schema "had") and evidence files in a PRIVATE Supabase
+#            Storage bucket, so nothing is lost when Render restarts or sleeps.
+#  had-demo  Labelled synthetic demo. Wiped and re-created on every start, in its
+#            own schema ("had_demo"). Its evidence files stay on Render's
+#            temporary disk and never touch the real bucket.
+#
+# Optional later: add SMTP_URL to "had" in the dashboard for password-reset emails.
+# Values marked "sync: false" are secrets: Render asks for them when you sync
+# this Blueprint. Never commit them to the repository.
 services:
+  - type: web
+    name: had
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL          # Supabase > Connect > Session pooler (IPv4)
+        sync: false
+      - key: SUPABASE_URL          # Supabase > Project Settings > API > Project URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY   # Supabase > Project Settings > API keys > service_role (secret)
+        sync: false
+      - key: DATABASE_POOL_MAX
+        value: "5"
+
   - type: web
     name: had-demo
     runtime: node
@@ -14,3 +44,7 @@ services:
         value: "22"
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL          # the same Session pooler string as above
+        sync: false
+      - key: DATABASE_POOL_MAX
+        value: "3"
