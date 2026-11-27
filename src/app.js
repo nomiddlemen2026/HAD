@@ -73,7 +73,10 @@ function createApp(opts = {}) {
   app.locals.config = config;
   app.disable('x-powered-by');
   app.set('trust proxy', opts.trustProxy ?? 1);
-  app.use(helmet({ contentSecurityPolicy: { directives: { 'script-src': ["'self'"], 'img-src': ["'self'", 'data:', ...(tileOrigin ? [tileOrigin] : [])] } } }));
+  app.use(helmet({ contentSecurityPolicy: { directives: { 'script-src': ["'self'"], 'img-src': ["'self'", 'data:', ...(tileOrigin ? [tileOrigin] : [])] } },
+    // OpenStreetMap's tile policy requires a Referer; helmet's default (no-referrer) gets tiles blocked.
+    // strict-origin-when-cross-origin sends only the site origin cross-site, never page paths or query strings.
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' } }));
   app.use(express.json({ limit: '200kb' }));
   app.use(cookieParser());
 

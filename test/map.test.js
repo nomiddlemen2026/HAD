@@ -27,6 +27,8 @@ test('map config and Leaflet assets are served; CSP allows tile host', async () 
   const js = await request(app).get('/vendor/leaflet/leaflet.js');
   assert.equal(js.status, 200);
   assert.match(js.headers['content-security-policy'], /img-src[^;]*https:\/\/tile\.openstreetmap\.org/);
+  // OSM blocks tile requests without a Referer, so the policy must send the origin
+  assert.equal(js.headers['referrer-policy'], 'strict-origin-when-cross-origin');
 });
 
 test('"mine" scope shows only own locations; "all" is staff-only', async () => {
