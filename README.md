@@ -38,6 +38,12 @@ HAD_DEMO_MODE=1 HAD_DB_PATH=data/demo.db HAD_STORAGE_DIR=storage-demo npm start
 
 Demo logins use the password `demo-password-123`: `victim@demo.had`, `victim2@demo.had`, `moderator@demo.had` and `admin@demo.had`. Every page shows a DEMO banner. The seed script refuses to write to any database whose name does not contain "demo", so demo data can never mix with real reports.
 
+### Free online demo (Render)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/nomiddlemen2026/HAD)
+
+`render.yaml` deploys the **demo only** on Render's free tier. The free tier has no persistent disk, so the synthetic demo data is re-created every time the server starts, and the instance sleeps when idle (the first visit after that takes about a minute). It is not suitable for real reports. For production, see the deployment steps in the implementation report.
+
 ## Tests
 
 ```bash

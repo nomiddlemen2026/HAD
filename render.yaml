@@ -1,0 +1,16 @@
+# One-click DEMO deployment on Render's free tier.
+# The free tier has no persistent disk, so this runs ONLY the labelled demo
+# (synthetic data is re-created on every start). Do not use it for real reports.
+services:
+  - type: web
+    name: had-demo
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm run demo
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production

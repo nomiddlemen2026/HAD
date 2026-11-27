@@ -8,7 +8,8 @@
     "migrate": "node scripts/migrate.js",
     "test": "node --test --test-reporter=spec test/*.test.js",
     "set-role": "node scripts/set-role.js",
-    "seed": "node scripts/seed-demo.js"
+    "seed": "node scripts/seed-demo.js",
+    "demo": "HAD_DEMO_MODE=1 HAD_DB_PATH=data/demo.db HAD_STORAGE_DIR=storage-demo sh -c \"node scripts/seed-demo.js && node src/server.js\""
   },
   "keywords": [],
   "author": "",
