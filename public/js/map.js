@@ -4,7 +4,7 @@
   const staff = me.role !== 'user';
   if (staff) document.querySelector('[data-staff]').classList.remove('hidden');
   const msg = document.getElementById('msg');
-  const VCOLOR = { verified: '#34d399', corroborated: '#2ea8ff', unverified: '#ffb547', approximate: '#8b6cff', unknown: '#8a93b8', disputed: '#ff5c7a', rejected: '#ff5c7a' };
+  const VCOLOR = { verified: '#39ff88', corroborated: '#00e5ff', unverified: '#ffb000', approximate: '#b58cff', unknown: '#7f93a6', disputed: '#ff3b5c', rejected: '#ff3b5c' };
   const SHAPE = {
     incident_location: 'circle', location_mentioned_in_threat: 'tri', voluntarily_shared_location: 'ring',
     public_business_address: 'square', approximate_network_location: 'area', officially_confirmed_suspect_location: 'diamond',

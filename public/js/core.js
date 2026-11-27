@@ -1,6 +1,7 @@
 /* H.A.D shared front-end helpers. No framework; every value from the server is
    inserted as text (never innerHTML) unless passed through esc(). */
 'use strict';
+const MARK = '<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 2 32 10v16L18 34 4 26V10Z"/><circle cx="18" cy="18" r="7"/><path d="M18 6v6M18 24v6M6 18h6M24 18h6"/><circle cx="18" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg>';
 
 const HAD = (() => {
   const LABELS = {
@@ -171,7 +172,7 @@ const HAD = (() => {
     const header = document.createElement('header');
     header.className = 'topnav';
     header.innerHTML = `
-      <a class="brand" href="/"><span class="mark">H</span><span>H.A.D<small>Hunt Ahlong Down</small></span></a>
+      <a class="brand" href="/"><span class="mark" aria-hidden="true">${MARK}</span><span>H.A.D<small>Hunt Ahlong Down</small></span></a>
       <button class="btn sm ghost menu-btn" aria-expanded="false" aria-controls="pubnav">Menu</button>
       <nav id="pubnav" aria-label="Main">
         <a href="/#search">Search a number</a>
@@ -219,7 +220,7 @@ const HAD = (() => {
     const navHtml = l => `<a class="nav" href="${l[0]}"${l[0] === active ? ' aria-current="page"' : ''}>${icon(l[1])}<span>${l[2]}</span></a>`;
     shell.innerHTML = `
       <aside class="sidebar" aria-label="Sidebar">
-        <a class="brand" href="/dashboard.html"><span class="mark">H</span><span>H.A.D<small>Hunt Ahlong Down</small></span></a>
+        <a class="brand" href="/dashboard.html"><span class="mark" aria-hidden="true">${MARK}</span><span>H.A.D<small>Hunt Ahlong Down</small></span></a>
         <nav aria-label="App">
           ${links.map(navHtml).join('')}
           ${staff ? '<div class="section">Staff</div>' + staffLinks.map(navHtml).join('') : ''}
@@ -234,7 +235,7 @@ const HAD = (() => {
     content.style.minWidth = '0';
     const mobileTop = document.createElement('div');
     mobileTop.className = 'mobile-top';
-    mobileTop.innerHTML = `<a class="brand" href="/dashboard.html"><span class="mark">H</span><span>H.A.D</span></a><span class="row" style="gap:6px"><a class="btn sm ghost" href="/safety.html">${icon('life', 16)} Help</a><a class="btn sm ghost" href="/account.html">${icon('user', 16)} Account</a></span>`;
+    mobileTop.innerHTML = `<a class="brand" href="/dashboard.html"><span class="mark" aria-hidden="true">${MARK}</span><span>H.A.D</span></a><span class="row" style="gap:6px"><a class="btn sm ghost" href="/safety.html">${icon('life', 16)} Help</a><a class="btn sm ghost" href="/account.html">${icon('user', 16)} Account</a></span>`;
     main.classList.add('main');
     main.prepend(mobileTop);
     main.id = 'main';
